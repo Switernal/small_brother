@@ -15,4 +15,4 @@
 # 忽略配置目录
 impl/extension/proxy/mihomo/binary_file/**
 impl/extension/proxy/mihomo/node_config/**
-impl/extension/proxy/mihomo/raw_config/**
+impl/extension/proxy/mihomo/raw_config/real/**
