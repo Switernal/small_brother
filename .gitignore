@@ -1,15 +1,18 @@
 **/__pycache__/
+**/__pycache__/**
+
+.DS_Store
 
 # 忽略所有test文件夹
 **/test/
 
 # 忽略所有output文件夹
-**/output/
+**/output/**
 
 # 忽略所有data文件夹
-**/data/
+**/data/**
 
 # 忽略配置目录
-impl/extension/proxy/mihomo/binary_file
-impl/extension/proxy/mihomo/node_config
-impl/extension/proxy/mihomo/raw_config
+impl/extension/proxy/mihomo/binary_file/**
+impl/extension/proxy/mihomo/node_config/**
+impl/extension/proxy/mihomo/raw_config/**
