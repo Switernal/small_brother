@@ -1,0 +1,11 @@
+{
+  "tls": {},
+  "no-extra-security": {
+    "tcp": {
+      "url": "ss://",
+      "hostname": "www.example.com",
+      "ip": "192.168.1.1",
+      "port": 20000
+    }
+  }
+}
