@@ -2,24 +2,8 @@ __doc__='任务-上下文'
 __author__='Li Qingyun'
 __date__='2025-02-28'
 
-import enum
 from abc import abstractmethod
-
-
-class TaskStatus(enum.Enum):
-    """
-    任务状态
-    """
-    INITIAL = 'initial'     # 初始状态
-    RESUME = 'resume'       # 恢复状态
-    RUNNING = 'running'     # 运行中
-    FINISHED = 'finished'   # 完成
-    INTERRUPT_UNEXPECT = 'unexpect_interrupt'   # 意外中断
-    INTERRUPT_MANUAL = 'manual_interrupt'       # 手动中断
-
-    def __str__(self):
-        return self.value
-
+from core.task.const.task_status import TaskStatus
 
 
 class TaskCaptureContext:
@@ -77,8 +61,6 @@ class TaskCaptureContext:
 
         # 2. 计数器
         counter = config_dict.get('counter', 0)
-
-        print(f'counter: {counter}')
 
         # 3. 最后一次执行时间
         last_perform_time = config_dict.get('last_perform_time', None)

@@ -3,7 +3,7 @@ __author__='Li Qingyun'
 __date__='2025-03-10'
 
 from core.request.const.request_type import RequestType
-from core.task.interface.config.task_request_config import TaskRequestConfig
+from core.task.interface.task_config.task_request_config import TaskRequestConfig
 
 
 class WebsiteTaskRequestConfig(TaskRequestConfig):

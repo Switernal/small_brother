@@ -42,7 +42,6 @@ class ConnectionTrackerThread(BetterThread):
         # 设置多线程相关
         self.daemon = True                    # 设为守护线程, 主线程终止会带着子线程一起停
         self.name = 'ConnectionTracker'       # 线程名
-        self._stop_event = threading.Event()  # 标志位，用于通知线程终止
 
 
     def run(self):
@@ -50,7 +49,7 @@ class ConnectionTrackerThread(BetterThread):
 
 
     def stop(self):
-        self._stop_event.set()
+        super().stop()
         self.join()
 
 
@@ -78,8 +77,9 @@ class ConnectionTrackerThread(BetterThread):
         # 用于保存当前活跃的连接
         current_active_conns = {}
 
+        connections = self.process.connections(kind='inet')
         # 遍历当前所有连接
-        for conn in self.process.connections(kind='inet'):
+        for conn in connections:
 
             # 如果连接没有远程地址, 说明没有创立连接, 调过
             if not conn.raddr:
@@ -162,7 +162,7 @@ class ConnectionTrackerThread(BetterThread):
         """启动监控循环"""
         try:
             print(f"[ConnectionTracker] 开始监控进程 {self.pid} (轮询间隔 {self.interval}s)...")
-            while self._stop_event.is_set() is False:
+            while self.stop_event.is_set() is False:
                 self._update_connections()
                 time.sleep(self.interval)
         except (psutil.NoSuchProcess, psutil.AccessDenied):

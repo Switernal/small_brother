@@ -33,11 +33,11 @@ extension_config:
     remote_address: 23.106.154.40
     remote_port: 59932
   proxy_config:
-    basic_config_dir: 'core/extension/impl/proxy/impl/mihomo/basic_configs',
-    work_dir: 'core/extension/impl/proxy/impl/mihomo/basic_configs',
-    node_config_dir: 'impl/extension/proxy/mihomo/node_config',
-    config_file_path: 'impl/extension/proxy/mihomo/node_config/mihomo_config_vless_reality-xtls-rprx-vision_tcp.yaml',
-    binary_file_path: 'impl/extension/proxy/mihomo/binary_file/mihomo-verge_darwin_arm64',
+    basic_config_dir: 'core/extension/impl/proxy/impl/mihomo/basic_configs'
+    work_dir: 'core/extension/impl/proxy/impl/mihomo/basic_configs'
+    node_config_dir: 'impl/extension/proxy/mihomo/node_config'
+    config_file_path: 'impl/extension/proxy/mihomo/node_config/mihomo_config_vless_reality-xtls-rprx-vision_tcp.yaml'
+    binary_file_path: 'impl/extension/proxy/mihomo/binary_file/mihomo-verge_darwin_arm64'
 # 请求配置
 request_config:
   request_type: browser_chrome_single_tab

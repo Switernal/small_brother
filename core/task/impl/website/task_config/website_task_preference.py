@@ -4,7 +4,7 @@ __date__='2025-03-10'
 
 from abc import abstractmethod
 
-from core.task.interface.config.task_preference import TaskPreference
+from core.task.interface.task_config.task_preference import TaskPreference
 
 
 class WebsiteTaskPreference(TaskPreference):

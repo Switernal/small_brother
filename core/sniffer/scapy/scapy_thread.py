@@ -82,7 +82,7 @@ class ScapyThread(BetterThread):
 
     def stop(self):
         """停止抓包进程"""
-        self.stop_event.set()
+        super().stop()
 
 
     def get_pcap_path(self):

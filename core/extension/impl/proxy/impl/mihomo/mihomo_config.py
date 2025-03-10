@@ -124,6 +124,13 @@ class MihomoProxyConfig(ProxyConfig):
         转换为字典
         :return:
         """
+        print({
+            'basic_config_dir': self.basic_config_dir,
+            'work_dir': self.work_dir,
+            'node_config_dir': self.node_config_dir,
+            'config_file_path': self.config_file_path,
+            'binary_file_path': self.binary_file_path,
+        })
         return {
             'basic_config_dir': self.basic_config_dir,
             'work_dir': self.work_dir,

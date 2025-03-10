@@ -22,14 +22,14 @@ class YamlUtil:
         self._read_yaml = YAML(typ='safe')
         pass
 
-    def load(self, file):
+    def load(self, file_path):
         """
         读取yaml
-        :param file:
+        :param file_path:
         :return:
         """
-        with open(file, 'r', encoding='utf-8') as file:
-           data = yaml.safe_load(file)
+        with open(file_path, 'r', encoding='utf-8') as file_path:
+           data = yaml.safe_load(file_path)
         return data
 
     def load_with_comments(self, file):
@@ -38,24 +38,26 @@ class YamlUtil:
         return data
 
 
-    def dump(self, data, file):
+    def dump(self, data, file_path):
         """
         普通保存
         :param data:
-        :param file:
+        :param file_path:
         :return:
         """
-        yaml.safe_dump(data, file, allow_unicode=True, sort_keys=False)
+        with open(file_path, 'w', encoding='utf-8') as file:
+            yaml.safe_dump(data, file, allow_unicode=True, sort_keys=False)
 
 
-    def dump_with_comments(self, data, file):
+    def dump_with_comments(self, commented_yaml_data, file_path):
         """
         保存含有comments的yaml
-        :param data:
-        :param file:
+        :param commented_yaml_data:
+        :param file_path:
         :return:
         """
-        self._write_yaml.dump(data, file)
+        with open(file_path, 'w', encoding='utf-8') as file:
+            self._write_yaml.dump(commented_yaml_data, file)
 
 
     def add_comments_before(self, data, comments_dict):

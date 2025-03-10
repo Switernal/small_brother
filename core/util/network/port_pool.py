@@ -36,7 +36,8 @@ class PortPool:
                 # if not self.available_ports:
                 #     return None  # 没有可用端口
                 # 如果
-                if not self.allocated_ports:
+                sleep(1)
+                if len(self.available_ports) <= 0:
                     print(f'[port_pool] 端口池中没有可用端口, 等待{wait_time}s后重新获取...')
                     sleep(wait_time)
                     wait_time = wait_time * 1.75    # 指数退避

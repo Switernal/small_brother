@@ -6,7 +6,7 @@ from core.extension.const.extension_type import ExtensionType
 from core.extension.impl.proxy.const.protocol_stack import ProtocolStack, ControlProtocol, SecurityProtocol, \
     TransportProtocol
 from core.extension.impl.proxy.const.proxy_type import ProxyType
-from core.task.interface.config.task_extension_config import TaskExtensionConfig
+from core.task.interface.task_config.task_extension_config import TaskExtensionConfig
 
 
 class WebsiteTaskExtensionConfig(TaskExtensionConfig):
@@ -56,6 +56,13 @@ class WebsiteTaskExtensionConfig(TaskExtensionConfig):
             else:
                 raise ValueError("协议栈不能为空")
 
+            # 2.3 代理配置
+            if origin_extension_config_dict.get("proxy_config"):
+                proxy_config_dict = origin_extension_config_dict.get("proxy_config")
+                extension_config_dict.update({'proxy_config': proxy_config_dict})
+            # else:
+            #     raise ValueError("代理配置不能为空")
+
         # elif extension_type == ExtensionType.TOR:
             # 2.2 tor类型
         else:
@@ -72,6 +79,7 @@ class WebsiteTaskExtensionConfig(TaskExtensionConfig):
             # 1. 代理类型
             extension_config_dict.update({'proxy_type': self.config_dict.get("proxy_type").value})
             extension_config_dict.update({'protocol_stack': self.config_dict.get("protocol_stack").to_dict()})
+            extension_config_dict.update({'proxy_config': self.config_dict.get("proxy_config")})
         # elif self.config_dict.get("extension_type") == ExtensionType.TOR:
             # 2. tor类型
 

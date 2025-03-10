@@ -67,13 +67,12 @@ class MihomoProxyExtension(ProxyExtension):
         config_file_path = self.proxy_config.get_node_config_file_path(self.protocol_stack)
 
         # 修改yaml配置文件中的mixed-port值, 即代理监听端口
-        with open(config_file_path, 'r') as file:
-            config = yaml.safe_load(file)
 
+        print(config_file_path)
+
+        config = YamlUtil().load(config_file_path)
         config['mixed-port'] = self.proxy_port
-
-        with open(config_file_path, 'w') as file:
-            YamlUtil().dump(config, file)
+        YamlUtil().dump(config, config_file_path)
 
         print('[MihomoProxyExtension] Mihomo 配置成功')
         print(f'\t使用的协议栈: {self.protocol_stack}')
@@ -113,7 +112,7 @@ class MihomoProxyExtension(ProxyExtension):
         """
         return {
             'extension_type': ExtensionType.PROXY,
-            'protocol_stack': self.protocol_stack.to_dict(),
+            'protocol_stack': self.protocol_stack,
             'proxy_port': self.proxy_port,
             'log_file_dir': self.log_file_dir,
             'proxy_config': self.proxy_config.to_dict()

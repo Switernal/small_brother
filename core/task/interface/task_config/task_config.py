@@ -5,11 +5,11 @@ __date__="2025-03-10"
 from abc import ABCMeta, abstractmethod
 
 from core.task.const.task_type import TaskType
-from core.task.interface.config.task_capture_context import TaskCaptureContext
-from core.task.interface.config.task_capture_policy import TaskCapturePolicy
-from core.task.interface.config.task_extension_config import TaskExtensionConfig
-from core.task.interface.config.task_preference import TaskPreference
-from core.task.interface.config.task_request_config import TaskRequestConfig
+from core.task.interface.task_config.task_capture_context import TaskCaptureContext
+from core.task.interface.task_config.task_capture_policy import TaskCapturePolicy
+from core.task.interface.task_config.task_extension_config import TaskExtensionConfig
+from core.task.interface.task_config.task_preference import TaskPreference
+from core.task.interface.task_config.task_request_config import TaskRequestConfig
 
 
 class TaskConfig(metaclass=ABCMeta):

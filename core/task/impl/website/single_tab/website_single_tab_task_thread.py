@@ -2,18 +2,15 @@ __doc__="单标签网页任务线程"
 __author__="Li Qingyun"
 __date__="2025-03-10"
 
-
-from time import sleep
-
 from tqdm import tqdm
 
-from core.task.interface.config.task_capture_context import TaskStatus
+from core.task.interface.task_config.task_capture_context import TaskStatus
 from core.task.interface.task_thread import TaskThread
 from core.util.data_loader.website_list_data_loader import WebsiteListDataLoader
 from core.util.io.yaml_util import YamlUtil
 from core.util.string.time_util import TimeUtil
 from impl.capture.website.website_single_tab_capture_thread import WebsiteSingleTabCaptureThread
-from impl.task.website.single_tab.website_single_tab_task_config import WebsiteSingleTabTaskConfig
+from core.task.impl.website.single_tab.website_single_tab_task_config import WebsiteSingleTabTaskConfig
 
 
 class WebsiteSingleTabTaskThread(TaskThread):
@@ -40,6 +37,7 @@ class WebsiteSingleTabTaskThread(TaskThread):
 
     def stop(self):
         super().stop()
+        self.task_being_interrupted()
         self.clear()
 
 
@@ -57,8 +55,6 @@ class WebsiteSingleTabTaskThread(TaskThread):
         else:
             print(f'[WebsiteSingleTabTaskThread] 任务 {self.task_config.task_name} 已完成, 无需执行')
 
-        # 2. 结束任务流程
-        self.finalize()
         pass
 
 
@@ -68,7 +64,7 @@ class WebsiteSingleTabTaskThread(TaskThread):
         :return:
         """
         # 1. 更新任务状态为手动中断
-        self.task_config.capture_context.update_status(TaskStatus.INTERRUPT_MANUAL)
+        self.task_config.capture_context.update_status(TaskStatus.INTERRUPT)
         # 2. 更新任务最后执行时间
         self.task_config.capture_context.update_last_perform_time(TimeUtil.now_time_str())
         # 3. 保存任务配置到磁盘
@@ -185,7 +181,6 @@ class WebsiteSingleTabTaskThread(TaskThread):
                     self.task_config.capture_context.increase_capture_performed_times()
                     self.save_config_to_disk()
 
-                    sleep(30)
                     pass
                 # end for capture_num (抓完一个网站了)
 
@@ -202,6 +197,9 @@ class WebsiteSingleTabTaskThread(TaskThread):
             self.save_config_to_disk()
 
         # end while
+
+        # 全部完成, 结束任务流程
+        self.finalize()
         pass
 
 
@@ -210,11 +208,10 @@ class WebsiteSingleTabTaskThread(TaskThread):
         保存任务到磁盘
         :return:
         """
-        with open(self.task_config_file_path, 'w', encoding='utf-8') as file:
-            YamlUtil().dump_with_comments(
-                data=self.task_config.convert_to_commented_yaml_data(),
-                file=file
-            )
+        YamlUtil().dump_with_comments(
+            commented_yaml_data=self.task_config.convert_to_commented_yaml_data(),
+            file_path=self.task_config_file_path
+        )
 
 
     def clear(self):

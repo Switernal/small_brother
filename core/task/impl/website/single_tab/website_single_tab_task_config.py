@@ -3,13 +3,13 @@ __author__="Li Qingyun"
 __date__="2025-03-10"
 
 from core.task.const.task_type import TaskType
-from core.task.interface.config.task_capture_context import TaskCaptureContext
-from core.task.interface.config.task_capture_policy import TaskCapturePolicy
-from core.task.interface.config.task_config import TaskConfig
+from core.task.interface.task_config.task_capture_context import TaskCaptureContext
+from core.task.interface.task_config.task_capture_policy import TaskCapturePolicy
+from core.task.interface.task_config.task_config import TaskConfig
 from core.util.io.yaml_util import YamlUtil
-from impl.task.website.task_config.website_task_extension_config import WebsiteTaskExtensionConfig
-from impl.task.website.task_config.website_task_preference import WebsiteTaskPreference
-from impl.task.website.task_config.website_task_request_config import WebsiteTaskRequestConfig
+from core.task.impl.website.task_config.website_task_extension_config import WebsiteTaskExtensionConfig
+from core.task.impl.website.task_config.website_task_preference import WebsiteTaskPreference
+from core.task.impl.website.task_config.website_task_request_config import WebsiteTaskRequestConfig
 
 
 class WebsiteSingleTabTaskConfig(TaskConfig):

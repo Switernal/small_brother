@@ -89,6 +89,15 @@ class ProxyExtension(ExtensionSubProcess, metaclass=ABCMeta):
             'proxy_port': self.proxy_port,
             'protocol_stack': self.protocol_stack,
         }
+    @abstractmethod
+    def to_dict(self):
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def from_dict(config_dict):
+        pass
+
 
     @staticmethod
     def create_extension_by_config(proxy_extension_config: dict):
