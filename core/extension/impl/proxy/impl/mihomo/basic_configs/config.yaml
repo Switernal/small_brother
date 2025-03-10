@@ -1,0 +1,56 @@
+mode: rule
+mixed-port: 8900
+allow-lan: false
+log-level: info
+ipv6: false
+external-controller: 127.0.0.1:8097
+secret: Lmd520LMD
+unified-delay: true
+dns:
+  enabled: true
+  nameserver:
+  - 119.29.29.29
+  - 223.5.5.5
+  fallback:
+  - 8.8.8.8
+  - 8.8.4.4
+  - tls://1.0.0.1:853
+  - tls://dns.google:853
+  use-system-hosts: false
+  enable: true
+  ipv6: false
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+profile:
+  store-selected: true
+external-controller-cors:
+  allow-private-network: true
+  allow-origins:
+  - '*'
+tun:
+  enable: false
+  stack: gvisor
+  auto-route: true
+  strict-route: false
+  auto-detect-interface: true
+  dns-hijack:
+  - any:53
+proxies:
+- name: vless
+  server: www.example.com
+  port: 23333
+  client-fingerprint: chrome
+  type: vless
+  uuid: 12345678-abcdefg-12345678-abcdefg
+  tls: true
+  flow: xtls-rprx-vision
+  servername: www.example.com
+  network: tcp
+proxy-groups:
+- name: PROXY
+  type: select
+  proxies:
+  - vless
+
+rules:
+- MATCH,PROXY
