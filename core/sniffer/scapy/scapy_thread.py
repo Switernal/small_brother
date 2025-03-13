@@ -6,12 +6,14 @@ import platform
 
 from scapy.all import *
 
+from core.util.io.log_util import LogUtil
 from core.util.multithreading.better_thread import BetterThread
 
 
 class ScapyThread(BetterThread):
 
     def __init__(self,
+                 task_name, 
                  output_file,
                  network_interface=None,
                  filter_expr=None
@@ -23,6 +25,8 @@ class ScapyThread(BetterThread):
         :param filter_expr:
         """
         super().__init__()
+        # 任务名称
+        self.task_name = task_name
         # 输出文件目录
         self.output_file = output_file
         # 过滤表达式
@@ -53,11 +57,11 @@ class ScapyThread(BetterThread):
         :return:
         """
         try:
-            print('[ScapyProcess] 抓包程序正在启动')
+            LogUtil().debug(self.task_name, '[ScapyProcess] 抓包程序正在启动')
             self._capture()
-            print('[ScapyProcess] 抓包程序已结束')
+            LogUtil().debug(self.task_name, '[ScapyProcess] 抓包程序已结束')
         except PermissionError:
-            logging.error("需要root权限执行抓包，请使用sudo运行脚本")
+            LogUtil().error("需要root权限执行抓包，请使用sudo运行脚本")
             exit(1)
 
 
@@ -90,13 +94,14 @@ class ScapyThread(BetterThread):
 
 
     @staticmethod
-    def create_scapy_thread_by_config(config: dict):
+    def create_scapy_thread_by_config(task_name, config: dict):
         if config is None:
             raise ValueError('task_config 参数不能为空')
         if config.get('output_file') is None:
             raise ValueError('output_file 不能为空')
 
         return ScapyThread(
+            task_name=task_name,
             output_file=config.get('output_file'),
             network_interface=config.get('network_interface'),
             filter_expr=config.get('filter_expr')

@@ -4,6 +4,8 @@ __date__ = '2025-02-24'
 
 import enum
 
+from core.util.io.log_util import LogUtil
+
 
 class ControlProtocol(enum.Enum):
     """
@@ -75,7 +77,7 @@ class ProtocolStack:
             if isinstance(self.transport, TransportProtocol) is False:
                 raise TypeError('Transport协议类型错误')
         except Exception as e:
-            print(e)
+            LogUtil().error('main', e.__str__())
             return False
         return True
 
@@ -101,7 +103,3 @@ class ProtocolStack:
 
     def __str__(self):
         return f'{self.control.value}_{self.security.value}_{self.transport.value}'
-
-
-if __name__ == '__main__':
-    print(ControlProtocol('vless'))

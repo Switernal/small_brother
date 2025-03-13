@@ -8,7 +8,10 @@ from scapy.layers.inet6 import IPv6
 from pathlib import Path
 from typing import List
 
+from scapy.layers.l2 import Ether
+
 from core.sniffer.connection.model.connection import Connection
+from core.util.io.log_util import LogUtil
 
 
 class ConnectionsFilter:
@@ -96,7 +99,7 @@ class ConnectionsFilter:
             else:
                 raise ValueError("数据包不是 TCP 或 UDP 协议")
         except Exception as e:
-            # print(e, ':', pkt)
+            # LogUtil().error('main', e, ':', pkt)
             pass
 
 
@@ -113,15 +116,18 @@ class ConnectionsFilter:
         for pkt in packets:
             key = self._get_packet_key(pkt)
             if key and key in self._connection_set:
+                # 确保数据包包含链路层类型
+                if not pkt.haslayer(Ether):
+                    pkt = Ether() / pkt  # 添加 Ether 层
                 filtered.append(pkt)
 
         # 安全写入临时文件
         temp_path = self.pcap_path.with_suffix(".tmp")
-        wrpcap(str(temp_path), filtered)
+        wrpcap(str(temp_path), filtered, linktype=1)
 
         # 原子化替换原文件
         temp_path.replace(self.pcap_path)
-        print(f"已过滤并覆盖文件: {self.pcap_path} (保留包数: {len(filtered)}/{len(packets)})")
+        LogUtil().debug('main', f"已过滤并覆盖文件: {self.pcap_path} (保留包数: {len(filtered)}/{len(packets)})")
 
 
 

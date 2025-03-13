@@ -110,7 +110,6 @@ class WebsiteSingleTabTaskConfig(TaskConfig):
         preference = WebsiteTaskPreference.from_dict(config_content.get('preference', {}))
 
 
-
         return WebsiteSingleTabTaskConfig(
             task_name=task_name,
             task_note=task_note,

@@ -1,6 +1,8 @@
+# 忽略缓存文件夹
 **/__pycache__
 **/__pycache__/**
 
+# damn macOS's shit
 **/.DS_Store
 
 # 忽略所有test文件夹
@@ -12,7 +14,7 @@
 # 忽略所有data文件夹
 **/data/**
 
-# 忽略配置目录
-impl/extension/proxy/mihomo/binary_file/**
-impl/extension/proxy/mihomo/node_config/**
-impl/extension/proxy/mihomo/raw_config/real/**
+# 忽略配置文件目录
+**/proxy/mihomo/binary_file/**
+**/proxy/mihomo/node_config/**
+**/proxy/mihomo/raw_config/real/**

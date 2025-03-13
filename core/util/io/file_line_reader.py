@@ -58,12 +58,20 @@ class FileLineReader:
         self.current_line += 1
 
 
-    def get_current_line_number(self):
+    def get_current_line_num(self):
         """
         获取当前行号
         :return:
         """
         return self.current_line
+
+
+    def get_total_line_num(self):
+        """
+        总行数
+        :return:
+        """
+        return len(self.offsets)
 
 
     def __enter__(self):
@@ -89,13 +97,6 @@ class FileLineReader:
         :return:
         """
         self._file.close()
-
-    def total_lines(self):
-        """
-        总行数
-        :return:
-        """
-        return len(self.offsets)
 
 
     def is_finish(self):

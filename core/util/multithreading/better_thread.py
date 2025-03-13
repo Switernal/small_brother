@@ -11,8 +11,14 @@ class BetterThread(threading.Thread, metaclass=ABCMeta):
     对 threading.Thread 包装, 提供停止方法和清理方法
     """
 
-    def __init__(self, target=None, name=None,
-                 args=(), kwargs=None, *, daemon=None):
+    def __init__(self,
+                 target=None,
+                 name=None,
+                 args=(),
+                 kwargs=None,
+                 *,
+                 daemon=None
+                 ):
         super().__init__(target, target=target, name=name,
                          args=args, kwargs=kwargs, daemon=daemon)
 

@@ -9,6 +9,7 @@ from core.extension.impl.proxy.const.protocol_stack import ProtocolStack
 from core.extension.impl.proxy.const.proxy_type import ProxyType
 from core.extension.impl.proxy.impl.mihomo.mihomo_config import MihomoProxyConfig
 from core.extension.impl.proxy.interface.proxy_extension import ProxyExtension
+from core.util.io.log_util import LogUtil
 from core.util.io.yaml_util import YamlUtil
 
 
@@ -68,17 +69,15 @@ class MihomoProxyExtension(ProxyExtension):
 
         # 修改yaml配置文件中的mixed-port值, 即代理监听端口
 
-        print(config_file_path)
-
         config = YamlUtil().load(config_file_path)
         config['mixed-port'] = self.proxy_port
         YamlUtil().dump(config, config_file_path)
 
-        print('[MihomoProxyExtension] Mihomo 配置成功')
-        print(f'\t使用的协议栈: {self.protocol_stack}')
-        print(f'\t使用的端口: {self.proxy_port}')
-        print(f'\t工作路径: {self.proxy_config.get_work_dir()}')
-        print(f'\t配置文件名: {config_file_path.split("/")[-1]}')
+        LogUtil().debug('main', '[MihomoProxyExtension] Mihomo 配置成功')
+        LogUtil().debug('main', f'\t使用的协议栈: {self.protocol_stack}')
+        LogUtil().debug('main', f'\t使用的端口: {self.proxy_port}')
+        LogUtil().debug('main', f'\t工作路径: {self.proxy_config.get_work_dir()}')
+        LogUtil().debug('main', f'\t配置文件名: {config_file_path.split("/")[-1]}')
         pass
 
 

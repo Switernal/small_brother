@@ -9,6 +9,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 from core.request.const.request_type import RequestType
 from core.request.interface.request_thread import RequestThread
+from core.util.io.log_util import LogUtil
 from core.util.io.path_util import PathUtil
 from core.util.string.time_util import TimeUtil
 from core.util.string.url_util import UrlUtil
@@ -17,6 +18,8 @@ from core.util.string.url_util import UrlUtil
 class ChromeSingleTabRequest(RequestThread):
 
     def __init__(self,
+                 task_name,
+                 request_name,
                  url,
                  screenshot_dir=None,
                  screenshot_name=None,
@@ -35,7 +38,7 @@ class ChromeSingleTabRequest(RequestThread):
         :param use_proxy:           是否使用代理
         :param proxy_port:          代理端口
         """
-        super().__init__()
+        super().__init__(task_name=task_name, request_name=request_name)
 
         # 加载策略
         #   1. 要加载的url
@@ -92,7 +95,7 @@ class ChromeSingleTabRequest(RequestThread):
     # ----- 浏览器设置 -----
     def __setup_proxy_option(self):
         """配置浏览器代理设置"""
-        print('浏览器的代理端口:', self.proxy_port)
+        LogUtil().debug(self.task_name, f'浏览器的代理端口: {self.proxy_port}')
         if self.use_proxy is True and self.proxy_port is not None:
             self.options.add_argument(f"--proxy-server=http://127.0.0.1:{self.proxy_port}")
 
@@ -113,7 +116,7 @@ class ChromeSingleTabRequest(RequestThread):
                 break
 
         if not chrome_main_pid:
-            print("[BrowserRunner] 未找到 Chrome 主进程")
+            LogUtil().debug(self.task_name, "[BrowserRunner] 未找到 Chrome 主进程")
             return None
 
         # 递归查找 Chrome 主进程的所有子进程
@@ -179,7 +182,7 @@ class ChromeSingleTabRequest(RequestThread):
         访问网页并等待加载完成
         :return: bool: 加载成功与否
         """
-        print(f'\n[BrowserRunner] 网页 {self.url} 开始加载\n')
+        LogUtil().debug(self.task_name, f'[BrowserRunner] 网页 {self.url} 开始加载')
 
         # 设置超时策略, 如果没有超时默认阻塞加载到结束
         if self.timeout is not None and self.timeout > 0:
@@ -196,7 +199,7 @@ class ChromeSingleTabRequest(RequestThread):
                     lambda d: d.execute_script("return document.readyState") == "complete"
                 )
         except Exception as e:
-            print(f'[BrowserRunner] 网页 {self.url} 加载出错, 错误: {e}')
+            LogUtil().debug(self.task_name, f'[BrowserRunner] 网页 {self.url} 加载出错, 错误: {e}')
             return False
 
         return True
@@ -221,14 +224,14 @@ class ChromeSingleTabRequest(RequestThread):
 
         screenshot_file_path = PathUtil.file_path_join(self.screenshot_dir, file_path=self.screenshot_name)
         self.web_driver.save_screenshot(screenshot_file_path)
-        print(f'[BrowserRunner] 网页截图保存成功: {screenshot_file_path}')
+        LogUtil().debug(self.task_name, f'[BrowserRunner] 网页截图保存成功: {screenshot_file_path}')
 
 
     def _stop_web_driver(self):
         """
         关闭浏览器实例
         """
-        print("[BrowserRunner] 关闭浏览器")
+        LogUtil().debug(self.task_name, "[BrowserRunner] 关闭浏览器")
         if self.web_driver:
             self.web_driver.quit()
 
@@ -245,8 +248,10 @@ class ChromeSingleTabRequest(RequestThread):
 
 
     @staticmethod
-    def create_request_thread_by_config(config: dict):
+    def create_request_thread_by_config(task_name: str, request_name: str, config: dict):
         return ChromeSingleTabRequest(
+            task_name=task_name,
+            request_name=request_name,
             url=config.get('url'),
             screenshot_dir=config.get('screenshot_dir'),
             screenshot_name=config.get('screenshot_name'),

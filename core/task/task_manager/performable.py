@@ -3,6 +3,7 @@ __author__="Li Qingyun"
 __date__="2025-03-10"
 
 from core.task.const.task_perform_status import TaskPerformStatus
+from core.task.interface.task_progress import TaskProgress
 from core.task.interface.task_thread import TaskThread
 
 
@@ -13,13 +14,16 @@ class Performable:
                  task_perform_status: TaskPerformStatus,
                  ):
 
-        # 任务名
+        # 初始化变量
+        # 1. 任务名
         self.task_name = task_name
-        # 任务文件路径
+        # 2. 任务文件路径
         self.task_file_path = task_file_path
-        # 任务执行状态
+        # 3. 任务执行状态
         self.task_perform_status = task_perform_status
-        # 任务线程
+
+        # 运行时变量
+        # 1. 任务线程
         self.task_thread = None
 
         self.create_task_thread()
@@ -37,6 +41,22 @@ class Performable:
         self.task_thread.join()
 
 
+    def create_task_thread(self):
+        """
+        创建任务线程
+        :return:
+        """
+        self.task_thread = TaskThread.create_task_thread_from_config_file(self.task_file_path)
+
+
+    def fetch_task_progress(self) -> TaskProgress:
+        """
+        获取任务执行进度(暂时没用)
+        :return:
+        """
+        return self.task_thread.task_progress
+
+
     def update_task_perform_status(self, new_status: TaskPerformStatus):
         """
         更新任务执行状态
@@ -48,11 +68,17 @@ class Performable:
 
 
     def is_task_need_to_perform(self) -> bool:
+        """
+        判断任务是否需要执行(如果任务的状态是已经完成, 就不需要执行)
+            此状态不是线程状态,是任务状态
+        :return:
+        """
         if self.task_thread.is_finished():
             return False
         return True
 
-    def set_perform_status_finished(self):
+
+    def set_task_perform_status_finished(self):
         """
         设置任务执行状态为完成
         :return:
@@ -62,23 +88,15 @@ class Performable:
 
     def is_perform_finished(self) -> bool:
         """
-        任务线程是否完成
+        任务线程是否执行完成
         :return:
         """
         # 线程存活状态指示了线程是否结束
         if self.task_thread.is_alive() is False:
             return False
         else:
-            self.set_perform_status_finished()
+            self.set_task_perform_status_finished()
             return True
-
-
-    def create_task_thread(self):
-        """
-        创建任务线程
-        :return:
-        """
-        self.task_thread = TaskThread.create_task_thread_from_config_file(self.task_file_path)
 
 
 

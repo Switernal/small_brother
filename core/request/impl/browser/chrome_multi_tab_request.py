@@ -9,6 +9,7 @@ from selenium.webdriver.chrome.options import Options
 
 from core.request.const.request_type import RequestType
 from core.request.interface.request_thread import RequestThread
+from core.util.io.log_util import LogUtil
 from core.util.io.path_util import PathUtil
 from core.util.string.time_util import TimeUtil
 from core.util.string.url_util import UrlUtil
@@ -18,6 +19,8 @@ class ChromeMultiTabRequest(RequestThread):
 
 
     def __init__(self,
+                 task_name,
+                 request_name: str,
                  urls: dict[str],
                  interval: int=0,           # 默认无间隔
                  screenshots_dir=None,
@@ -34,7 +37,7 @@ class ChromeMultiTabRequest(RequestThread):
         :param use_proxy:           是否使用代理
         :param proxy_port:          代理端口
         """
-        super().__init__()
+        super().__init__(task_name=task_name, request_name=request_name)
 
         # 加载策略
         #   1. 要加载的url
@@ -88,7 +91,7 @@ class ChromeMultiTabRequest(RequestThread):
     # ----- 浏览器设置 -----
     def __setup_proxy_option(self):
         """配置浏览器代理设置"""
-        print('浏览器的代理端口:', self.proxy_port)
+        LogUtil().debug(self.request_name, f'浏览器的代理端口: {self.proxy_port}')
         if self.use_proxy is True and self.proxy_port is not None:
             self.options.add_argument(f"--proxy-server=http://127.0.0.1:{self.proxy_port}")
 
@@ -109,7 +112,7 @@ class ChromeMultiTabRequest(RequestThread):
                 break
 
         if not chrome_main_pid:
-            print("[BrowserRunner] 未找到 Chrome 主进程")
+            LogUtil().debug(self.request_name, "[BrowserRunner] 未找到 Chrome 主进程")
             return None
 
         # 递归查找 Chrome 主进程的所有子进程
@@ -180,7 +183,7 @@ class ChromeMultiTabRequest(RequestThread):
         self.web_driver.execute_script(f"window.open('{url}')")     # 打开新标签页
         window_handles = self.web_driver.window_handles
         self.web_driver.switch_to.window(window_handles[-1])        # 切换到新标签页
-        # print(f"已打开: {url}, 标题: {self.web_driver.title}")
+        # LogUtil().debug(self.request_name, f"已打开: {url}, 标题: {self.web_driver.title}")
 
 
     async def _visit_urls(self) -> bool:
@@ -194,10 +197,10 @@ class ChromeMultiTabRequest(RequestThread):
 
         for i, url in enumerate(self.urls):
             try:
-                print(f'[BrowserRunner] 第 {i} 个网页 {url} 开始加载')
+                LogUtil().debug(self.request_name, f'[BrowserRunner] 第 {i} 个网页 {url} 开始加载')
                 await self.__open_new_tab(url, i * self.interval)    # 第 i 个网页等待 i * interval 秒
             except Exception as e:
-                print(f'[BrowserRunner] 第 {i} 个网页 {url} 加载出错, 错误: {e}')
+                LogUtil().debug(self.request_name, f'[BrowserRunner] 第 {i} 个网页 {url} 加载出错, 错误: {e}')
                 return False
 
         return True
@@ -229,14 +232,14 @@ class ChromeMultiTabRequest(RequestThread):
             self.web_driver.save_screenshot(screenshot_file_path)
             screenshot_names.append(screenshot_name)
 
-        print(f'[BrowserRunner] {len(self.urls)} 个网页截图保存成功: {screenshot_names}')
+        LogUtil().debug(self.request_name, f'[BrowserRunner] {len(self.urls)} 个网页截图保存成功: {screenshot_names}')
 
 
     def _stop_web_driver(self):
         """
         关闭浏览器实例
         """
-        print("[BrowserRunner] 关闭浏览器")
+        LogUtil().debug(self.request_name, "[BrowserRunner] 关闭浏览器")
         if self.web_driver:
             self.web_driver.quit()
 
@@ -250,8 +253,10 @@ class ChromeMultiTabRequest(RequestThread):
 
 
     @staticmethod
-    def create_request_thread_by_config(config: dict):
+    def create_request_thread_by_config(task_name, request_name: str, config: dict):
         return ChromeMultiTabRequest(
+            task_name=task_name,
+            request_name=request_name,
             urls=config.get('urls'),
             screenshots_dir=config.get('screenshot_dir'),
             timeout=config.get('timeout'),

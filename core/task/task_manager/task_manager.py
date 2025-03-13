@@ -7,7 +7,10 @@ import threading
 from abc import ABCMeta, abstractmethod
 from time import sleep
 
+from tqdm import tqdm
+
 from core.task.task_manager.performable import Performable
+from core.util.io.log_util import LogUtil
 from core.util.io.yaml_util import YamlUtil
 
 
@@ -46,53 +49,69 @@ class TaskManager(metaclass=ABCMeta):
         开始执行
         :return:
         """
-        while self._stop_event.is_set() is False:
-            # 运行进程数没达到上限
-            # 还有没执行的线程
-            if self.next_task_to_perform_index < len(self.performable_list):
-                # 如果没达到最大并发数, 就开始执行
-                if self.__num_of_running_threads() < self.max_concurrent_num:
-                    # 如果任务的状态是已完成(非线程状态), 就直接跳过
-                    if not self.performable_list[self.next_task_to_perform_index].is_task_need_to_perform():
-                        print("任务状态已完成")
-                        self.performable_list[self.next_task_to_perform_index].set_perform_status_finished()
-                        self.next_task_to_perform_index += 1
-                        continue
-                    # 取一个开始执行
-                    self.performing_index_list.add(self.next_task_to_perform_index)
-                    self.performable_list[self.next_task_to_perform_index].start()
-                    self.next_task_to_perform_index += 1
-            else:
-                # 所有线程都在运行状态了
-                # 所有任务都执行完了
-                if self.__num_of_running_threads() == 0:
-                    # 跳出循环
-                    break
-                # 还有没执行完的
-                remove_set = set()
-                for index in self.performing_index_list:
-                    # 如果线程不再存活, 就说明终止了
-                    if self.performable_list[index].is_perform_finished():
-                        # 添加到需要清除的列表
-                        remove_set.add(index)
-                # 如果有需要被移除的index, 就遍历一下全部移除
-                if len(remove_set) > 0:
-                    for index_to_remove in remove_set:
-                        self.performing_index_list.remove(index_to_remove)
+        with tqdm(total=len(self.performable_list),
+                  initial=self.next_task_to_perform_index,
+                  desc="任务管理器进度",
+                  unit='个任务',
+                  position=1) as progress_bar:
 
-            # 每次循环更新, 就存一下
-            self.save_task_group_to_disk()
-            # 防止刷新过快
-            sleep(5)
-        # end while
+            progress_bar.display()
+
+            while self._stop_event.is_set() is False:
+
+                # 运行进程数没达到上限
+                # 还有没执行的线程
+                if self.next_task_to_perform_index < len(self.performable_list):
+                    # 如果没达到最大并发数, 就开始执行
+                    if self.__num_of_running_threads() < self.max_concurrent_num:
+                        # 如果任务的状态是已完成(非线程状态), 就直接跳过
+                        if not self.performable_list[self.next_task_to_perform_index].is_task_need_to_perform():
+                            LogUtil().debug('main', f"任务 {self.performable_list[self.next_task_to_perform_index].task_name} 已完成")
+                            self.performable_list[self.next_task_to_perform_index].set_task_perform_status_finished()
+                            self.next_task_to_perform_index += 1
+                            progress_bar.update(1)  # 当做一个任务完成, 进度直接+1
+                            continue
+                        # 取一个开始执行
+                        self.performing_index_list.add(self.next_task_to_perform_index)
+                        self.performable_list[self.next_task_to_perform_index].start()
+                        self.next_task_to_perform_index += 1
+                else:
+                    # 所有线程都在运行状态了
+                    # 所有任务都执行完了
+                    if self.__num_of_running_threads() == 0:
+                        # 跳出循环
+                        break
+                    # 还有没执行完的
+                    remove_set = set()
+                    for index in self.performing_index_list:
+                        # 如果线程不再存活, 就说明终止了
+                        if self.performable_list[index].is_perform_finished():
+                            # 添加到需要清除的列表
+                            remove_set.add(index)
+                    # 如果有需要被移除的index, 就遍历一下全部移除
+                    if len(remove_set) > 0:
+                        for index_to_remove in remove_set:
+                            self.performing_index_list.remove(index_to_remove)
+                            progress_bar.update(1)  # 一个任务完成, 进度才能+1
+
+                # 每次循环更新, 就存一下
+                self.save_task_group_to_disk()
+                # 防止刷新过快
+                sleep(5)
+
+            # end while
+        # end with tqdm
+
         # 走到这里有两种情况: 1. 中断信号  2. 全部完成
 
         # 1. 执行中断
         if self._stop_event.is_set():
             self.stop_all_task()
+            LogUtil().debug('main', "[TaskManager] 任务执行中断")
+            return
 
         # 2. 全部完成
-        print("[TaskManager] 所有任务已全部执行完毕")
+        LogUtil().debug('main', "[TaskManager] 所有任务已全部执行完毕")
 
 
 
@@ -101,19 +120,19 @@ class TaskManager(metaclass=ABCMeta):
         停止所有执行中的任务
         :return:
         """
-        print("[TaskManager] 正在通知任务全部停止...")
+        LogUtil().debug('main', "[TaskManager] 正在通知任务全部停止...")
         if len(self.performing_index_list) == 0:
             return
         # 通知执行中的所有任务
         for index in self.performing_index_list:
             self.performable_list[index].stop()
-        print("[TaskManager] 任务已全部停止")
+        LogUtil().debug('main', "[TaskManager] 任务已全部停止")
         # 保存一下
         self.save_task_group_to_disk()
 
 
     def handle_interrupt(self, signum, frame):
-        print("[TaskManager] 收到系统中断消息")
+        LogUtil().debug('main', "[TaskManager] 收到系统中断消息")
         self._stop_event.set()
         # exit(0)
 

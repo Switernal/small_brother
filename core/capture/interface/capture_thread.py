@@ -12,7 +12,8 @@ class CaptureThread(BetterThread):
     """
 
     def __init__(self,
-                 name: str,
+                 task_name: str,
+                 capture_name: str,
                  extension_config,
                  request_config,
                  sniffer_scapy_config,
@@ -20,13 +21,16 @@ class CaptureThread(BetterThread):
                  ):
         """
         构造函数
-        :param name:                            线程名
+        :param capture_name:                            线程名
         :param extension_config:                扩展子线程配置
         :param request_config:                  请求子线程配置
         :param sniffer_scapy_config:            抓包子线程配置
         :param sniffer_conn_tracker_config:     连接追踪子线程配置
         """
-        super().__init__(name=f"CaptureThread-{name}")
+        super().__init__(name=f"CaptureThread-{capture_name}")
+
+        self.task_name = task_name
+        self.capture_name = capture_name
 
         self.extension_config = extension_config
         self.request_config = request_config

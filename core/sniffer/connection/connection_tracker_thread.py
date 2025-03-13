@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import Dict
 
 from core.sniffer.connection.model.connection import Connection
+from core.util.io.log_util import LogUtil
 from core.util.io.path_util import PathUtil
 from core.util.multithreading.better_thread import BetterThread
 from core.util.string.time_util import TimeUtil
@@ -20,11 +21,14 @@ class ConnectionTrackerThread(BetterThread):
     """
 
     def __init__(self,
+                 task_name,
                  pid: int,
                  log_file_dir: str,
                  log_file_name=None
                  ):
         super().__init__()
+        
+        self.task_name = task_name
 
         # 文件相关
         self.log_file_dir = log_file_dir
@@ -106,7 +110,7 @@ class ConnectionTrackerThread(BetterThread):
                     "status": status
                 })
                 self.connections_dict[conn_key] = new_conn
-                print(f"[ConnectionTracker] 新建连接 [{status}]: {new_conn.local_ip}:{new_conn.local_port} -> {new_conn.remote_ip}:{new_conn.remote_port}")
+                LogUtil().debug(self.task_name, f"[ConnectionTracker] 新建连接 [{status}]: {new_conn.local_ip}:{new_conn.local_port} -> {new_conn.remote_ip}:{new_conn.remote_port}")
             else:
                 existing = self.connections_dict[conn_key]
                 existing.last_seen = time.time()
@@ -116,7 +120,7 @@ class ConnectionTrackerThread(BetterThread):
                         "timestamp": datetime.now().isoformat(),
                         "status": status
                     })
-                    print(f"[ConnectionTracker] 连接状态变更 [{status}]: {existing.local_ip}:{existing.local_port} -> {existing.remote_ip}:{existing.remote_port}")
+                    LogUtil().debug(self.task_name, f"[ConnectionTracker] 连接状态变更 [{status}]: {existing.local_ip}:{existing.local_port} -> {existing.remote_ip}:{existing.remote_port}")
 
             # 添加到当前活跃的连接
             current_active_conns[conn_key] = True
@@ -155,18 +159,18 @@ class ConnectionTrackerThread(BetterThread):
             })
         with open(self.log_file_path, 'w') as file:
             json.dump(data, file, indent=2)
-        print(f"[ConnectionTracker] 连接历史已保存至 {self.log_file_name}")
+        LogUtil().debug(self.task_name, f"[ConnectionTracker] 连接历史已保存至 {self.log_file_name}")
 
 
     def _start_monitor(self):
         """启动监控循环"""
         try:
-            print(f"[ConnectionTracker] 开始监控进程 {self.pid} (轮询间隔 {self.interval}s)...")
+            LogUtil().debug(self.task_name, f"[ConnectionTracker] 开始监控进程 {self.pid} (轮询间隔 {self.interval}s)...")
             while self.stop_event.is_set() is False:
                 self._update_connections()
                 time.sleep(self.interval)
         except (psutil.NoSuchProcess, psutil.AccessDenied):
-            print(f"[ConnectionTracker] 进程 {self.pid} 已终止或权限不足")
+            LogUtil().debug(self.task_name, f"[ConnectionTracker] 进程 {self.pid} 已终止或权限不足")
         finally:
             self._save_to_file()
 

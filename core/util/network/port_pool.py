@@ -6,6 +6,7 @@ __date__ = "2025-02-25"
 import threading
 from time import sleep
 
+from core.util.io.log_util import LogUtil
 from core.util.python.singleton_util import Singleton
 
 
@@ -38,14 +39,14 @@ class PortPool:
                 # 如果
                 sleep(1)
                 if len(self.available_ports) <= 0:
-                    print(f'[port_pool] 端口池中没有可用端口, 等待{wait_time}s后重新获取...')
+                    LogUtil().debug('main', f'[port_pool] 端口池中没有可用端口, 等待{wait_time}s后重新获取...')
                     sleep(wait_time)
                     wait_time = wait_time * 1.75    # 指数退避
                     continue
 
                 port = self.available_ports.pop()
                 self.allocated_ports.add(port)
-                print(f'[port_pool] 申请了一个新的端口号: {port}')
+                LogUtil().debug('main', f'[port_pool] 申请了一个新的端口号: {port}')
                 return port
 
     def release_port(self, port):
@@ -57,7 +58,7 @@ class PortPool:
             if port in self.allocated_ports:
                 self.allocated_ports.remove(port)
                 self.available_ports.add(port)
-                print(f'[port_pool] 回收了一个端口号: {port}')
+                LogUtil().debug('main', f'[port_pool] 回收了一个端口号: {port}')
             else:
                 raise ValueError(f"Port {port} is not allocated or already released")
 
@@ -81,15 +82,15 @@ if __name__ == "__main__":
     # 获取端口
     port1 = port_pool.get_port()
     port2 = port_pool.get_port()
-    print(f"Allocated ports: {port1}, {port2}")
-    print(port_pool)
+    LogUtil().debug('main', f"Allocated ports: {port1}, {port2}")
+    LogUtil().debug('main', port_pool)
 
     # 回收端口
     port_pool.release_port(port1)
-    print(f"Released port: {port1}")
-    print(port_pool)
+    LogUtil().debug('main', f"Released port: {port1}")
+    LogUtil().debug('main', port_pool)
 
     # 再次获取端口
     port3 = port_pool.get_port()
-    print(f"Allocated port: {port3}")
-    print(port_pool)
+    LogUtil().debug('main', f"Allocated port: {port3}")
+    LogUtil().debug('main', port_pool)

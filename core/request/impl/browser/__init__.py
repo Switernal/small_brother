@@ -1,0 +1,2 @@
+from .chrome_single_tab_request import ChromeSingleTabRequest
+from .chrome_multi_tab_request import ChromeMultiTabRequest
