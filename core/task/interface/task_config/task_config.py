@@ -10,6 +10,7 @@ from core.task.interface.task_config.task_capture_policy import TaskCapturePolic
 from core.task.interface.task_config.task_extension_config import TaskExtensionConfig
 from core.task.interface.task_config.task_preference import TaskPreference
 from core.task.interface.task_config.task_request_config import TaskRequestConfig
+from core.task.interface.task_config.task_sniffer_config import TaskSnifferConfig
 
 
 class TaskConfig(metaclass=ABCMeta):
@@ -20,6 +21,7 @@ class TaskConfig(metaclass=ABCMeta):
                  output_dir: str,
                  extension_config: TaskExtensionConfig,
                  request_config: TaskRequestConfig,
+                 sniffer_config: TaskSnifferConfig,
                  capture_policy: TaskCapturePolicy,
                  capture_context: TaskCaptureContext,
                  preference: TaskPreference=None
@@ -30,6 +32,7 @@ class TaskConfig(metaclass=ABCMeta):
         self.output_dir = output_dir
         self.extension_config = extension_config
         self.request_config = request_config
+        self.sniffer_config = sniffer_config
         self.capture_policy = capture_policy
         self.capture_context = capture_context
         self.preference = preference

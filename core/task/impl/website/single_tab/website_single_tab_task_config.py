@@ -6,6 +6,7 @@ from core.task.const.task_type import TaskType
 from core.task.interface.task_config.task_capture_context import TaskCaptureContext
 from core.task.interface.task_config.task_capture_policy import TaskCapturePolicy
 from core.task.interface.task_config.task_config import TaskConfig
+from core.task.interface.task_config.task_sniffer_config import TaskSnifferConfig
 from core.util.io.yaml_util import YamlUtil
 from core.task.impl.website.task_config.website_task_extension_config import WebsiteTaskExtensionConfig
 from core.task.impl.website.task_config.website_task_preference import WebsiteTaskPreference
@@ -21,6 +22,7 @@ class WebsiteSingleTabTaskConfig(TaskConfig):
                  output_dir: str,
                  extension_config: WebsiteTaskExtensionConfig,
                  request_config: WebsiteTaskRequestConfig,
+                 sniffer_config: TaskSnifferConfig,
                  capture_policy: TaskCapturePolicy,
                  capture_context: TaskCaptureContext,
                  preference: WebsiteTaskPreference,
@@ -33,6 +35,7 @@ class WebsiteSingleTabTaskConfig(TaskConfig):
             output_dir=output_dir,
             extension_config=extension_config,
             request_config=request_config,
+            sniffer_config=sniffer_config,
             capture_policy=capture_policy,
             capture_context=capture_context,
             preference=preference
@@ -94,19 +97,25 @@ class WebsiteSingleTabTaskConfig(TaskConfig):
         else:
             request_config = None
 
-        # 8. 抓取策略
+        # 8. sniffer 配置
+        if config_content.get('sniffer_config'):
+            sniffer_config = TaskSnifferConfig.from_dict(config_content.get('sniffer_config'))
+        else:
+            sniffer_config = None
+
+        # 9. 抓取策略
         if config_content.get('capture_policy'):
             capture_policy = TaskCapturePolicy.from_dict(config_content.get('capture_policy'))
         else:
             raise ValueError('[WebsiteSingleTabTaskConfig] 抓取策略不能为空')
 
-        # 9. 上下文
+        # 10. 上下文
         if config_content.get('capture_context'):
             capture_context = TaskCaptureContext.from_dict(config_content.get('capture_context'))
         else:
             raise ValueError('[WebsiteSingleTabTaskConfig] 上下文不能为空')
 
-        # 10. 偏好
+        # 11. 偏好
         preference = WebsiteTaskPreference.from_dict(config_content.get('preference', {}))
 
 
@@ -118,6 +127,7 @@ class WebsiteSingleTabTaskConfig(TaskConfig):
             output_dir=output_dir,
             extension_config=extension_config,
             request_config=request_config,
+            sniffer_config=sniffer_config,
             capture_policy=capture_policy,
             capture_context=capture_context,
             preference=preference,
@@ -144,6 +154,10 @@ class WebsiteSingleTabTaskConfig(TaskConfig):
 
         if self.request_config is not None and len(self.request_config.config_dict.keys()) > 0:
             yaml_data.update({'request_config': self.request_config.to_dict()})
+
+        if self.sniffer_config is not None and len(self.sniffer_config.to_dict().keys()) > 0:
+            yaml_data.update({'sniffer_config': self.sniffer_config.to_dict()})
+
         return yaml_data
 
 
@@ -169,6 +183,7 @@ class WebsiteSingleTabTaskConfig(TaskConfig):
             'output_dir': '输出主目录',
             'extension_config': '扩展配置',
             'request_config': '请求配置',
+            'sniffer_config': '流量嗅探配置',
             'capture_policy': self.capture_policy.comments_for_yaml_data().get('main_comment'),
             'task_context': self.capture_context.comments_for_yaml_data().get('main_comment'),
             'preference': self.preference.comments_for_yaml_data().get('main_comment')

@@ -201,9 +201,10 @@ class ConnectionTrackerThread(BetterThread):
 
 
     @staticmethod
-    def create_connection_tracker_thread_by_config(config: dict):
+    def create_connection_tracker_thread_by_config(task_name: str, config: dict):
         """
         根据配置dict创建线程
+        :param task_name:
         :param config:
         :return:
         """
@@ -212,6 +213,7 @@ class ConnectionTrackerThread(BetterThread):
         if config.get('log_file_dir') is None:
             raise ValueError("[ConnectionTrackerThread] task_config['log_file_dir'] 不能为空")
         return ConnectionTrackerThread(
+            task_name=task_name,
             pid=config.get('pid'),
             log_file_dir=config.get('log_file_dir'),
             log_file_name=config.get('log_file_name')

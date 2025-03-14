@@ -166,15 +166,31 @@ class WebsiteSingleTabTaskThread(TaskThread):
                             LogUtil().debug(self.task_config.task_name, f'[WebsiteSingleTabTaskThread] 创建抓取任务')
 
                             # 4.2 创建抓取任务并执行
+                            # (1) 判断 extension_config 是否存在
                             if self.task_config.extension_config is not None:
                                 extension_config_dict = self.task_config.extension_config.config_dict
                             else:
                                 extension_config_dict = None
-
+                            # (2) 判断 request_config 是否存在
                             if self.task_config.request_config is not None:
                                 request_config_dict = self.task_config.request_config.config_dict
                             else:
                                 request_config_dict = None
+                            # (3) 判断 sniffer_config 是否存在
+                            if self.task_config.sniffer_config is None:
+                                sniffer_scapy_config = None
+                                sniffer_conn_tracker_config = None
+                            else:
+                                # (3.1) 判断 sniffer_scapy_config 是否存在
+                                if self.task_config.sniffer_config.scapy_config_dict is not None:
+                                    sniffer_scapy_config = self.task_config.sniffer_config.scapy_config_dict
+                                else:
+                                    sniffer_scapy_config = None
+                                # (3.2) 判断 sniffer_conn_tracker_config 是否存在
+                                if self.task_config.sniffer_config.connection_tracker_config_dict is not None:
+                                    sniffer_conn_tracker_config = self.task_config.sniffer_config.connection_tracker_config_dict
+                                else:
+                                    sniffer_conn_tracker_config = None
 
                             capture_thread = WebsiteSingleTabCaptureThread(
                                 task_name=self.task_config.task_name,
@@ -183,8 +199,8 @@ class WebsiteSingleTabTaskThread(TaskThread):
                                 output_main_dir=self.task_config.output_dir,
                                 extension_config=extension_config_dict,
                                 request_config=request_config_dict,
-                                # sniffer_scapy_config=self.task_config.sniffer_scapy_config,
-                                # sniffer_conn_tracker_config=self.task_config.sniffer_conn_tracker_config
+                                sniffer_scapy_config=sniffer_scapy_config,
+                                sniffer_conn_tracker_config=sniffer_conn_tracker_config
                             )
                             LogUtil().debug(self.task_config.task_name, f'[WebsiteSingleTabTaskThread] 启动抓取流程')
                             # 启动抓取流程

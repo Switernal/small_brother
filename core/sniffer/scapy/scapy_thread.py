@@ -13,14 +13,14 @@ from core.util.multithreading.better_thread import BetterThread
 class ScapyThread(BetterThread):
 
     def __init__(self,
-                 task_name, 
-                 output_file,
+                 task_name,
+                 output_file_path,
                  network_interface=None,
                  filter_expr=None
                  ):
         """
 
-        :param output_file: 输出文件名命名
+        :param output_file_path: 输出文件名命名
         :param network_interface: 网卡名称
         :param filter_expr:
         """
@@ -28,7 +28,7 @@ class ScapyThread(BetterThread):
         # 任务名称
         self.task_name = task_name
         # 输出文件目录
-        self.output_file = output_file
+        self.output_file = output_file_path
         # 过滤表达式
         if filter_expr is not None:
             self.filter_expr = filter_expr
@@ -95,14 +95,19 @@ class ScapyThread(BetterThread):
 
     @staticmethod
     def create_scapy_thread_by_config(task_name, config: dict):
+
+        # 如果没传入配置, 抛异常
         if config is None:
-            raise ValueError('task_config 参数不能为空')
-        if config.get('output_file') is None:
-            raise ValueError('output_file 不能为空')
+            raise ValueError('[create_scapy_thread_by_config] task_config 参数不能为空')
+
+        # 如果没传入保存路径, 抛异常
+        if config.get('output_file_path') is None:
+            raise ValueError('[create_scapy_thread_by_config] config中output_file_path 不能为空')
+        output_file_path = config.get('output_file_path')
 
         return ScapyThread(
             task_name=task_name,
-            output_file=config.get('output_file'),
+            output_file_path=output_file_path,
             network_interface=config.get('network_interface'),
             filter_expr=config.get('filter_expr')
         )

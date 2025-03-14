@@ -18,6 +18,11 @@ capture_context:
   counter: 0
   last_perform_time: None
   capture_performed_times: 0
+# 流量嗅探配置
+sniffer_config:
+  scapy_config:
+    network_interface: 'en0'
+    filter_expr: 'host 23.106.154.40 and port 59932'
 # 抓取偏好设置
 preference:
   save_log: true
