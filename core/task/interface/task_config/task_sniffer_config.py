@@ -10,6 +10,11 @@ class TaskSnifferConfig:
                  scapy_config_dict: dict,
                  connection_tracker_config_dict: dict
                  ):
+        """
+
+        :param scapy_config_dict:               Scapy配置
+        :param connection_tracker_config_dict:  连接追踪器配置
+        """
         self.scapy_config_dict = scapy_config_dict
         self.connection_tracker_config_dict = connection_tracker_config_dict
         pass
@@ -17,6 +22,11 @@ class TaskSnifferConfig:
     @staticmethod
     @abstractmethod
     def from_dict(origin_sniffer_config_dict: dict):
+        """
+        从字典创建对象
+        :param origin_sniffer_config_dict:
+        :return: TaskSnifferConfig 对象
+        """
         # 1. Scapy配置
         scapy_config_dict = None
         # 2. 连接追踪器配置
@@ -37,6 +47,10 @@ class TaskSnifferConfig:
 
     @abstractmethod
     def to_dict(self) -> dict:
+        """
+        转字典
+        :return:
+        """
         _result = {}
 
         if len(self.scapy_config_dict.keys()) > 0:

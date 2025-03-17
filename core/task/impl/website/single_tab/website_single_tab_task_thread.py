@@ -15,11 +15,19 @@ from core.task.impl.website.single_tab.website_single_tab_task_config import Web
 
 
 class WebsiteSingleTabTaskThread(TaskThread):
+    """
+    单标签网页任务线程
+    """
 
     def __init__(self,
                  task_config_file_path: str,
                  task_config: WebsiteSingleTabTaskConfig
                  ):
+        """
+
+        :param task_config_file_path:   任务配置文件路径
+        :param task_config:             任务配置
+        """
         super().__init__(
             task_name=task_config.task_name,
             task_config_file_path=task_config_file_path,
@@ -33,7 +41,11 @@ class WebsiteSingleTabTaskThread(TaskThread):
     
     @staticmethod
     def create_task_from_config_file(task_config_file_path: str):
-        """从文件初始化任务"""
+        """
+        从文件初始化任务
+        :param task_config_file_path: 任务配置文件路径
+        :return: WebsiteSingleTabTaskThread 任务线程对象
+        """
         task_config = WebsiteSingleTabTaskConfig.create_task_config_from_file(task_config_file_path)
         return WebsiteSingleTabTaskThread(task_config_file_path=task_config_file_path, task_config=task_config)
         
@@ -44,7 +56,7 @@ class WebsiteSingleTabTaskThread(TaskThread):
 
     def stop(self):
         super().stop()
-        self.task_being_interrupted()
+        # self.task_being_interrupted()
         self.clear()
 
 
@@ -67,7 +79,7 @@ class WebsiteSingleTabTaskThread(TaskThread):
 
     def task_being_interrupted(self):
         """
-        停止标志位设置后, 需要调用这个
+        当进程被通知stop, 停止标志位设置后, 需要调用这个来执行任务中断逻辑
         :return:
         """
         # 1. 更新任务状态为手动中断

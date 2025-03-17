@@ -4,7 +4,6 @@ __date__="2025-03-10"
 
 import signal
 import threading
-from abc import ABCMeta, abstractmethod
 from time import sleep
 
 from tqdm import tqdm
@@ -14,8 +13,17 @@ from core.util.io.log_util import LogUtil
 from core.util.io.yaml_util import YamlUtil
 
 
-class TaskManager(metaclass=ABCMeta):
+class TaskManager:
+    """
+    任务管理器
+        任务管理器是一个任务组的管理器, 负责管理任务组中的所有任务
+        任务组描述文件是一个yaml文件, 包含了任务组的信息, 并发设置等
+    """
     def __init__(self, task_group_file_path: str):
+        """
+
+        :param task_group_file_path: 任务组文件路径
+        """
 
         # 任务组文件路径
         self.task_group_file_path = task_group_file_path
@@ -58,8 +66,6 @@ class TaskManager(metaclass=ABCMeta):
             progress_bar.display()
 
             while self._stop_event.is_set() is False:
-
-                # 运行进程数没达到上限
                 # 还有没执行的线程
                 if self.next_task_to_perform_index < len(self.performable_list):
                     # 如果没达到最大并发数, 就开始执行
@@ -103,7 +109,6 @@ class TaskManager(metaclass=ABCMeta):
         # end with tqdm
 
         # 走到这里有两种情况: 1. 中断信号  2. 全部完成
-
         # 1. 执行中断
         if self._stop_event.is_set():
             self.stop_all_task()

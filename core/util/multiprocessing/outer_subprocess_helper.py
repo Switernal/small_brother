@@ -15,12 +15,23 @@ from abc import abstractmethod
 
 
 class OuterSubProcessHelper:
+    """
+    外部子进程助手类
+    """
+
     def __init__(self,
                  name: str,
                  start_command,
                  enable_log: bool=False,
                  log_file_path: str = None,
                  ):
+        """
+        初始化
+        :param name:            进程名
+        :param start_command:   启动命令
+        :param enable_log:      是否启用日志
+        :param log_file_path:   日志文件路径
+        """
         self.name = name                      # 自定义的进程名
         self.enable_log = enable_log          # 是否启用日志
         self.log_file_path = log_file_path    # 日志目录(如果不启用, 这一项可以为None)

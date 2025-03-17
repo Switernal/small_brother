@@ -14,6 +14,10 @@ from core.task.impl.website.task_config.website_task_request_config import Websi
 
 
 class WebsiteSingleTabTaskConfig(TaskConfig):
+    """
+    单标签网页任务配置类
+        继承路径: WebsiteSingleTabTaskConfig -> TaskConfig
+    """
 
     def __init__(self,
                  task_name: str,
@@ -28,6 +32,20 @@ class WebsiteSingleTabTaskConfig(TaskConfig):
                  preference: WebsiteTaskPreference,
                  website_list_path: str,
                  ):
+        """
+
+        :param task_name:           任务名称
+        :param task_note:           任务备注
+        :param task_type:           任务类型
+        :param output_dir:          输出目录
+        :param extension_config:    扩展配置
+        :param request_config:      请求配置
+        :param sniffer_config:      流量嗅探配置
+        :param capture_policy:      抓取策略
+        :param capture_context:     上下文
+        :param preference:          偏好
+        :param website_list_path:   网站列表文件路径
+        """
         super().__init__(
             task_name=task_name,
             task_note=task_note,
@@ -175,12 +193,15 @@ class WebsiteSingleTabTaskConfig(TaskConfig):
 
 
     def comments_for_yaml_data(self):
-        """给yaml数据添加注释"""
+        """
+        给yaml数据添加注释
+        :return:  yaml 注释 dict
+        """
         return {
             'task_name': '任务名称',
             'task_note': '任务备注',
-            'website_list_path': '网站列表文件路径',
-            'output_dir': '输出主目录',
+            'website_list_path': '网站列表文件路径(绝对路径)',
+            'output_dir': '输出主目录(绝对路径)',
             'extension_config': '扩展配置',
             'request_config': '请求配置',
             'sniffer_config': '流量嗅探配置',

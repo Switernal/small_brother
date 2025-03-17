@@ -54,7 +54,6 @@ class ConnectionTrackerThread(BetterThread):
 
     def stop(self):
         super().stop()
-        self.join()
 
 
     def get_connections_list(self) -> [Connection]:

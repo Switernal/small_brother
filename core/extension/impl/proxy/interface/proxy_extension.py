@@ -15,7 +15,8 @@ from core.util.multiprocessing.outer_subprocess_helper import OuterSubProcessHel
 
 class ProxyExtension(ExtensionSubProcess, metaclass=ABCMeta):
     """
-    代理类接口, 所有其他代理必须从这个类继承并实现对应的方法
+    代理类接口 (纯虚类, 不可实例化)
+        所有其他代理必须从这个类继承并实现对应的方法
     """
 
     def __init__(self,
@@ -29,17 +30,17 @@ class ProxyExtension(ExtensionSubProcess, metaclass=ABCMeta):
         """
         初始化
         :param proxy_type:      代理类型
-        :param proxy_port:            端口
+        :param proxy_port:      端口
         :param protocol_stack:  协议栈
-        :param proxy_config:          配置实例
+        :param proxy_config:    配置实例
         :param log_file_dir:    日志文件目录
         :param enable_log:      是否开启日志(默认开启)
         """
         # 配置文件路径
         self.proxy_type = proxy_type          # 代理类型
-        self.proxy_config = proxy_config                  # 配置实例
+        self.proxy_config = proxy_config      # 配置实例
         self.log_file_dir = log_file_dir
-        self.proxy_port = proxy_port                      # 端口
+        self.proxy_port = proxy_port          # 端口
         self.protocol_stack = protocol_stack  # 协议栈
 
         # 注意: 由于ExtensionSubProcess还继承了Extension类, 调用父类初始方法必须用"类名.__init__()"
@@ -91,33 +92,49 @@ class ProxyExtension(ExtensionSubProcess, metaclass=ABCMeta):
         }
     @abstractmethod
     def to_dict(self):
+        """
+        将对象转换为字典
+        :return:
+        """
         pass
 
     @staticmethod
     @abstractmethod
     def from_dict(config_dict):
+        """
+        从字典中创建对象
+        :param config_dict:
+        :return:
+        """
         pass
 
 
     @staticmethod
-    def create_extension_by_config(proxy_extension_config: dict):
+    def create_extension_by_config(extension_config: dict):
         """
         根据配置创建一个代理扩展
-        :param proxy_extension_config:
+        :param extension_config:
         :return:
         """
-        if proxy_extension_config.get('extension_type') is None \
-            or proxy_extension_config.get('extension_type') is not ExtensionType.PROXY:
+        if extension_config.get('extension_type') is None:
+            raise ValueError(f"[ProxyExtension] 传入的配置类型为空")
+
+        if extension_config.get('extension_type') is not ExtensionType.PROXY:
             raise ValueError(f"[ProxyExtension] 传入的配置不是代理配置")
 
-        if proxy_extension_config.get('proxy_type') == ProxyType.MIHOMO:
-            from core.extension.impl.proxy.impl.mihomo.mihomo_proxy_extension import MihomoProxyExtension
-            return MihomoProxyExtension.from_dict(proxy_extension_config)
+        # 代理类型
+        proxy_type = extension_config.get('proxy_type')
 
-        elif proxy_extension_config.get('proxy_type') == ProxyType.V2RAY:
+        # 判断是哪种代理
+        if proxy_type == ProxyType.MIHOMO:
+            from core.extension.impl.proxy.impl.mihomo.mihomo_proxy_extension import MihomoProxyExtension
+            return MihomoProxyExtension.from_dict(extension_config)
+
+        elif proxy_type == ProxyType.V2RAY:
             raise ValueError(f"[ProxyExtension] 暂不支持创建{ProxyType.V2RAY.value}代理")
 
-        elif proxy_extension_config.get('proxy_type') == ProxyType.XRAY:
+        elif proxy_type == ProxyType.XRAY:
             raise ValueError(f"[ProxyExtension] 暂不支持创建{ProxyType.XRAY.value}代理")
+
         else:
-            raise ValueError("[ProxyExtension] 不支持的代理类型")
+            raise ValueError(f"[ProxyExtension] 不支持的代理类型: {proxy_type}")

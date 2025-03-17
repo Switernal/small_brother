@@ -11,10 +11,10 @@ class ExtensionType(enum.Enum):
     """
     扩展类型
     """
-    PROXY = 'proxy'
-    TOR = 'tor'
-    OTHER = 'other'
-    UNKNOWN = 'unknown'
+    PROXY = 'proxy'         # 代理
+    TOR = 'tor'             # Tor
+    OTHER = 'other'         # 其他
+    UNKNOWN = 'unknown'     # 未知
 
     def __str__(self):
         return self.value

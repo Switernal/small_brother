@@ -11,7 +11,7 @@ from core.util.multithreading.better_thread import BetterThread
 
 class Extension(metaclass=ABCMeta):
     """
-    Extension 抽象类
+    Extension 抽象类 (纯虚类, 不可实例化)
         只暴露两个接口给外部, 内部线程和子进程差异对外部透明
     """
 
@@ -33,16 +33,26 @@ class Extension(metaclass=ABCMeta):
 
     @staticmethod
     def create_extension_by_config(config):
+        """
+        根据配置创建扩展
+        :param config:
+        :return:
+        """
         if config.get('extension_type') is None:
-            raise ValueError("extension_type is None")
+            raise ValueError("[Extension] extension_type 不存在")
 
-        if config.get('extension_type') == ExtensionType.PROXY:
+        extension_type = config.get('extension_type')
+
+        # 1. 代理
+        if extension_type == ExtensionType.PROXY:
             from core.extension.impl.proxy.interface.proxy_extension import ProxyExtension
             return ProxyExtension.create_extension_by_config(config)
-        elif config.get('extension_type') == ExtensionType.TOR:
-            raise ValueError(f"暂不支持 Tor")
+        # 2. Tor
+        elif extension_type == ExtensionType.TOR:
+            raise ValueError(f"[Extension] 暂不支持 Tor")
+        # 3. 其他
         else:
-            raise ValueError(f"不支持的扩展类型: {config.get('extension_type').value()}")
+            raise ValueError(f"[Extension] 不支持的扩展类型: {extension_type.value}")
 
         pass
 
@@ -50,7 +60,8 @@ class Extension(metaclass=ABCMeta):
 
 class ExtensionThread(BetterThread, Extension, metaclass=ABCMeta):
     """
-    ExtensionThread 使用线程创建
+    使用内部子线程创建 Extension
+        todo: 暂时没有实现类继承这个. 另外如果需要用的话, CaptureThread 内的代码要做对应支持
     """
     pass
 
@@ -58,6 +69,7 @@ class ExtensionThread(BetterThread, Extension, metaclass=ABCMeta):
 
 class ExtensionSubProcess(OuterSubProcessHelper, Extension, metaclass=ABCMeta):
     """
-    ExtensionSubProcess 使用外部子进程方式创建
+    使用外部子进程方式创建 Extension
+        一般使用这个, 因为代理软件都是外部的二进制可执行文件, 通过命令行方式启动
     """
     pass

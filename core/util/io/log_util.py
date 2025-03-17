@@ -11,14 +11,16 @@ from core.util.string.time_util import TimeUtil
 
 @Singleton
 class LogUtil:
-
+    """
+    日志记录工具
+    """
     
     def __init__(self):
-        self.enable_log = True
-        self.log_dir = None
-        self.__loggers = {}
-        self.__logger_locks = {}
-        self.__util_lock = threading.Lock()
+        self.enable_log = True                  # 是否启用日志记录
+        self.log_dir = None                     # 日志路径
+        self.__loggers = {}                     # 日志记录器对象, key是任务名, value是logger对象
+        self.__logger_locks = {}                # 日志记录器锁, key是任务名, value是锁对象
+        self.__util_lock = threading.Lock()     # 工具锁
 
 
     def set_log_dir(self, log_dir: str):
@@ -102,22 +104,40 @@ class LogUtil:
 
 
     def info(self, logger_name: str, msg):
+        """
+        记录一条info级别日志
+        :param logger_name:
+        :param msg:
+        :return:
+        """
         if not self.enable_log:
             return
         self.get_logger(logger_name).warning(msg)   # todo: INFO和DEBUG无法输出的问题暂时解决不了
         if logger_name != 'main':
-            self.get_logger('main').warning(msg)
+            self.get_logger('main').warning(msg)    # todo: INFO和DEBUG无法输出的问题暂时解决不了
 
 
     def debug(self, logger_name: str, msg):
+        """
+        记录一条debug级别日志
+        :param logger_name:
+        :param msg:
+        :return:
+        """
         if not self.enable_log:
             return
-        self.get_logger(logger_name).warning(msg)
+        self.get_logger(logger_name).warning(msg)   # todo: INFO和DEBUG无法输出的问题暂时解决不了
         if logger_name != 'main':
-            self.get_logger('main').warning(msg)
+            self.get_logger('main').warning(msg)    # todo: INFO和DEBUG无法输出的问题暂时解决不了
 
 
     def warning(self, logger_name: str, msg):
+        """
+        记录一条warning级别日志
+        :param logger_name:
+        :param msg:
+        :return:
+        """
         if not self.enable_log:
             return
         self.get_logger(logger_name).warning(msg)
@@ -126,6 +146,12 @@ class LogUtil:
 
 
     def error(self, logger_name: str, msg):
+        """
+        记录一条error级别日志
+        :param logger_name:
+        :param msg:
+        :return:
+        """
         if not self.enable_log:
             return
         self.get_logger(logger_name).error(msg)

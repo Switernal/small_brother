@@ -79,6 +79,7 @@ class ScapyThread(BetterThread):
                 timeout=1  # 每隔1秒检查一次stop_event
             )
 
+
     def clear(self):
         """清理进程"""
         pass

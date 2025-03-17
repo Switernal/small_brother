@@ -21,17 +21,20 @@ class CaptureThread(BetterThread):
                  ):
         """
         构造函数
-        :param capture_name:                            线程名
-        :param extension_config:                扩展子线程配置
-        :param request_config:                  请求子线程配置
-        :param sniffer_scapy_config:            抓包子线程配置
-        :param sniffer_conn_tracker_config:     连接追踪子线程配置
+        :param task_name:                       隶属于的任务名
+        :param capture_name:                    Capture进程名称
+        :param extension_config:                Extension子线程配置
+        :param request_config:                  Request子线程配置
+        :param sniffer_scapy_config:            Scapy抓包子线程配置
+        :param sniffer_conn_tracker_config:     ConnectionTracker线程配置
         """
         super().__init__(name=f"CaptureThread-{capture_name}")
 
+        # 进程信息
         self.task_name = task_name
         self.capture_name = capture_name
 
+        # 配置字典
         self.extension_config = extension_config
         self.request_config = request_config
         self.sniffer_scapy_config = sniffer_scapy_config
@@ -40,4 +43,8 @@ class CaptureThread(BetterThread):
 
     @abstractmethod
     def _start_capture(self):
+        """
+        启动抓取流程
+        :return:
+        """
         pass

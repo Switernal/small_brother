@@ -6,6 +6,10 @@ import os
 
 
 class PathUtil:
+    """
+    路径工具类
+    """
+
     @staticmethod
     def auto_create_path(path: str) -> None:
         """

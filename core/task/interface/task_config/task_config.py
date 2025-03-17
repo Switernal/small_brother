@@ -14,6 +14,11 @@ from core.task.interface.task_config.task_sniffer_config import TaskSnifferConfi
 
 
 class TaskConfig(metaclass=ABCMeta):
+    """
+    任务配置的抽象类
+        用于解析任务配置文件, 并生成任务配置对象
+        不可实例化, 需要继承后实现
+    """
     def __init__(self,
                  task_name: str,
                  task_note: str,
@@ -26,6 +31,18 @@ class TaskConfig(metaclass=ABCMeta):
                  capture_context: TaskCaptureContext,
                  preference: TaskPreference=None
                  ):
+        """
+        :param task_name:           任务名称
+        :param task_note:           任务备注
+        :param task_type:           任务类型
+        :param output_dir:          输出目录
+        :param extension_config:    扩展配置
+        :param request_config:      请求配置
+        :param sniffer_config:      流量嗅探配置
+        :param capture_policy:      抓取策略
+        :param capture_context:     上下文
+        :param preference:          偏好
+        """
         self.task_name = task_name
         self.task_note = task_note
         self.task_type = task_type

@@ -8,11 +8,23 @@ from core.task.interface.task_thread import TaskThread
 
 
 class Performable:
+    """
+    任务体
+        任务体是任务的包装, 本身不能执行
+        任务体内存了 TaskThread 线程对象, 通过 Performable 来控制任务进程
+        可以更好的多任务并行和对任务执行状态进行监控
+    """
     def __init__(self,
                  task_name: str,
                  task_file_path: str,
                  task_perform_status: TaskPerformStatus,
                  ):
+        """
+
+        :param task_name:           任务名
+        :param task_file_path:      任务文件路径
+        :param task_perform_status: 任务体执行状态
+        """
 
         # 初始化变量
         # 1. 任务名
@@ -31,11 +43,19 @@ class Performable:
 
 
     def start(self):
+        """
+        启动任务
+        :return:
+        """
         self.task_thread.start()
         # self.task_thread.join()
 
 
     def stop(self):
+        """
+        停止任务
+        :return:
+        """
         self.task_thread.stop()
         self.update_task_perform_status(TaskPerformStatus.INTERRUPT)
         self.task_thread.join()
@@ -92,7 +112,7 @@ class Performable:
         :return:
         """
         # 线程存活状态指示了线程是否结束
-        if self.task_thread.is_alive() is False:
+        if self.task_thread.is_alive() is True:
             return False
         else:
             self.set_task_perform_status_finished()
@@ -102,6 +122,11 @@ class Performable:
 
     @staticmethod
     def from_dict(config_dict):
+        """
+        从字典中创建对象
+        :param config_dict:
+        :return:
+        """
         task_name = config_dict.get('task_name')
         task_file_path = config_dict.get('task_file_path')
         task_perform_status = TaskPerformStatus(config_dict.get('status'))
@@ -112,6 +137,10 @@ class Performable:
 
 
     def to_dict(self):
+        """
+        转字典
+        :return:
+        """
         return {
             'task_name': self.task_name,
             'task_file_path': self.task_file_path,

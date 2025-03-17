@@ -7,7 +7,10 @@ import enum
 
 class TaskType(enum.Enum):
     """
-    任务类型
+    任务类型 (用于描述任务类型)
+        后续可加入多种自定义类型扩展
+        建议类型为大类别, 比如 website/dns/application 等, 细分类别可以放到 RequestType 里去
+        不过其实这个字段似乎用处也不大, 日后考虑废弃, 仅使用 RequestType
     """
 
     WEBSITE_SINGLE_TAB = "website_single_tab"   # 单标签网页

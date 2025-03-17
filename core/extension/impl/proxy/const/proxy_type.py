@@ -1,4 +1,3 @@
-# 用途,作者和日期
 __doc__ = "代理软件类型"
 __author__ = "Li Qingyun"
 __date__ = "2025-02-24"
@@ -10,6 +9,9 @@ class ProxyType(enum.Enum):
     """
     代理类型
     """
-    MIHOMO = 'mihomo'
-    V2RAY = 'v2ray'
-    XRAY = 'xray'
+    MIHOMO = 'mihomo'   # mihomo内核
+    V2RAY = 'v2ray'     # v2ray内核
+    XRAY = 'xray'       # xray内核
+
+    def __str__(self):
+        return self.value

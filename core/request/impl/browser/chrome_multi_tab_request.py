@@ -2,6 +2,8 @@ __doc__ = "Chrome多标签请求线程"
 __author__ = "Li Qingyun"
 __date__ = "2025-03-09"
 
+from time import sleep
+
 import psutil
 import asyncio
 from selenium import webdriver
@@ -231,6 +233,7 @@ class ChromeMultiTabRequest(RequestThread):
             screenshot_file_path = PathUtil.file_path_join(self.screenshots_dir, file_path=screenshot_name)
             self.web_driver.save_screenshot(screenshot_file_path)
             screenshot_names.append(screenshot_name)
+            sleep(0.5)
 
         LogUtil().debug(self.request_name, f'[BrowserRunner] {len(self.urls)} 个网页截图保存成功: {screenshot_names}')
 

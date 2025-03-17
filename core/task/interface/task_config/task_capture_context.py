@@ -14,6 +14,13 @@ class TaskCaptureContext:
                  last_perform_time,
                  capture_performed_times
                  ):
+        """
+
+        :param status:                  任务状态
+        :param counter:                 计数器(类似CPU指令计数器, 主要是记录执行位置, 比如第几个网站这样)
+        :param last_perform_time:       最后一次执行时间
+        :param capture_performed_times: 抓取次数
+        """
         self.status = status                                        # 任务状态
         self.counter = counter                                      # 计数器
         self.last_perform_time = last_perform_time                  # 最后一次执行时间
@@ -21,22 +28,37 @@ class TaskCaptureContext:
         pass
 
     def increase_counter(self):
-        """计数器增加"""
+        """
+        计数器自增
+        :return:
+        """
         self.counter += 1
         pass
 
     def update_counter(self, new_counter):
-        """修改计数器"""
+        """
+        更新计数器
+        :param new_counter: 新计数值
+        :return:
+        """
         self.counter = new_counter
         pass
 
     def update_status(self, new_status: TaskStatus):
-        """修改状态"""
+        """
+        更新任务状态
+        :param new_status: TaskStatus 类型
+        :return:
+        """
         self.status = new_status
         pass
 
     def update_last_perform_time(self, new_time):
-        """更新最后一次执行时间"""
+        """
+        更新最后一次执行时间
+        :param new_time:
+        :return:
+        """
         self.last_perform_time = new_time
         pass
 

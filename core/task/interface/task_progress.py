@@ -4,6 +4,10 @@ __date__="2025-03-13"
 
 
 class TaskProgress:
+    """
+    任务执行进度
+    """
+
     def __init__(self, current_progress: int, total_progress: int):
         self.current_progress = current_progress
         self.total_progress = total_progress

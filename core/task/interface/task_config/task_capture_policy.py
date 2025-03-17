@@ -12,6 +12,12 @@ class TaskCapturePolicy:
                  timeout: int=None,
                  visit_interval: int=0
                  ):
+        """
+
+        :param capture_times:   抓取次数
+        :param timeout:         超时时间(秒)[注: 超时后立即停止请求]
+        :param visit_interval:  访问间隔(秒)
+        """
         self.capture_times = capture_times      # 抓取次数
         self.timeout = timeout                  # 超时时间
         self.visit_interval = visit_interval    # 访问间隔
@@ -21,7 +27,11 @@ class TaskCapturePolicy:
     @staticmethod
     @abstractmethod
     def from_dict(config_dict):
-        """解析capture_policy字典"""
+        """
+        解析capture_policy字典
+        :param config_dict:
+        :return:
+        """
         # 1. 抓取次数
         if config_dict.get('capture_times'):
             capture_times = config_dict.get('capture_times')
@@ -41,7 +51,10 @@ class TaskCapturePolicy:
 
     @abstractmethod
     def to_dict(self):
-        """转字典"""
+        """
+        转字典
+        :return:
+        """
         return {
             'capture_times': self.capture_times,
             'timeout': self.timeout,

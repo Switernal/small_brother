@@ -21,6 +21,7 @@ from core.util.string.url_util import UrlUtil
 class WebsiteSingleTabCaptureThread(CaptureThread):
     """
     单标签网站抓取进程
+        注: 单次抓取为一个原子操作, 不能中断, 所以不检测stop_event信号
     """
 
     def __init__(self,
@@ -28,11 +29,22 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
                  capture_name: str,
                  url: str,
                  output_main_dir: str,
-                 extension_config: dict,
-                 request_config: dict,
+                 extension_config:dict=None,
+                 request_config: dict=None,
                  sniffer_scapy_config: dict=None,
                  sniffer_conn_tracker_config: dict=None
                  ):
+        """
+
+        :param task_name:                       任务名
+        :param capture_name:                    抓取进程名
+        :param url:                             url
+        :param output_main_dir:                 输出主目录
+        :param extension_config:                扩展配置
+        :param request_config:                  请求配置
+        :param sniffer_scapy_config:            scapy配置
+        :param sniffer_conn_tracker_config:     ConnectionTracker配置
+        """
 
         # 初始化配置
         super().__init__(
@@ -45,44 +57,50 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
         )
 
         # 配置
-        self.url = url                                  # url
-        self.url_for_dir = UrlUtil.get_main_domain(url) # 仅保留主域名的url, 为目录设计
-        self.output_main_dir = output_main_dir          # 输出主目录
+        self.url = url                                  # 本次抓取的url
+        self.url_for_dir = UrlUtil.get_main_domain(url) # 仅保留https://后的主域名的url, 为目录设计(目录中不能含有 / ? 等特殊字符)
+        self.output_main_dir = output_main_dir          # 输出文件的主目录
 
         # 进程内共享的参数
-        self.__create_time_str = TimeUtil.now_time_str()   # 创建时间
-        self.__pid_to_monitor = None                  # 需要监控的pid
-        self.__pcap_path = None                       # pcap文件路径
-        self.__connections = None                     # 连接列表
+        self.__create_time_str = TimeUtil.now_time_str()    # 本次抓取进程的创建时间
+        self.__pid_to_monitor = None                        # 需要监控的pid
+        self.__pcap_path = None                             # pcap文件路径
+        self.__connections = None                           # 连接列表
 
         # 进程实例
-        self.extension = None
-        self.request_thread = None
-        self.sniffer_scapy_thread = None
-        self.sniffer_conn_tracker_thread = None
+        self.extension = None                       # 扩展(一般是外部进程, 也可能是线程)
+        self.request_thread = None                  # 请求线程
+        self.sniffer_scapy_thread = None            # scapy线程
+        self.sniffer_conn_tracker_thread = None     # ConnectionTracker线程
 
         # 进程传递出来信息
-        self.extension_info = None
-        self.request_thread_info = None
+        self.extension_info = None          # 扩展加载后回传的信息(如代理端口, 代理PID等)
+        self.request_thread_info = None     # 请求线程创建后回传的信息(如浏览器PID等)
 
         pass
 
 
     def run(self):
+        # 进程启动入口
         self._start_capture()
+
+    def stop(self):
+        # 设置停止标志位
+        super().stop()
 
 
     def __update_output_main_dir(self):
         """
         更新输出主目录
+            主要是使用代理信息创建存储目录
         :return:
         """
         # 判断是否是代理
         if self.__is_extension_proxy() is True:
             # 获取配置中的协议栈
             protocol_stack = self.extension_config.get('protocol_stack')
-            # 代理格式
-            # - output/google.com/proxy/[transport_protocol]/['security_protocol']/['transport_protocol']/2021-08-01-12-00-00.pcap
+            # 代理输出目录的格式
+            # - output/google.com/proxy/[transport_protocol]/['security_protocol']/['transport_protoecol']/traffic.pacp
             # 例子: output/google.com/proxy/vless/tls/ws/2021-08-01-12-00-00/traffic.pcap
             self.output_main_dir = PathUtil.dir_path_join(
                 self.output_main_dir,  # 输出主目录
@@ -94,7 +112,7 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
                 self.__create_time_str              # 任务创建时间
             )
         else:
-            # 没有任何拓展, 定义为直连
+            # 没有任何拓展(直连)的目录
             # - output/google.com/direct/2021-08-01-12-00-00/traffic.pcap
             self.output_main_dir = PathUtil.dir_path_join(
                 self.output_main_dir,              # 输出主目录
@@ -105,6 +123,10 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
 
 
     def __is_extension_proxy(self):
+        """
+        判断扩展是否是代理
+        :return:
+        """
         if self.extension_config is None:
             return False
         return self.extension_config.get('extension_type') == ExtensionType.PROXY
@@ -190,7 +212,14 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
 
     def __create_and_start_sniffer(self):
         """
-        创建并启动嗅探
+        创建并启动流量嗅探模块(包括Scapy和ConnectionTracker)
+
+        流程:
+            1. 设置pcap路径
+            2. 创建scapy线程, 但需要检查是否传入sniffer_scapy_config, 如果传入了应该特别处理
+            3. 启动scapy线程
+            4. 创建ConnectionTracker线程, 但需要检查是否传入sniffer_conn_tracker_config, 如果传入了应该特别处理
+            5. 启动ConnectionTracker线程
         :return:
         """
         LogUtil().debug(self.task_name, f"[WebsiteCaptureThread] 正在启动 Sniffer 模块 (Scapy)")
@@ -201,7 +230,7 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
             file_path=f'{self.url_for_dir}_{self.__create_time_str}.pcap'
         )
         # 2. 创建scapy线程, 但需要检查是否传入scapy_config, 如果传入了应该特别处理
-        if self.sniffer_scapy_config is None:
+        if self.sniffer_scapy_config is None or self.sniffer_scapy_config.get('filter_expr') is None:
             # 2.1 没有传入scapy_config
             filter_expr = None  # scapy的过滤器表达式
             # 2.1.1 如果是代理, 需要把远程地址和端口生成一个过滤表达式传入scapy
@@ -248,13 +277,14 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
 
     def __visit_website(self):
         """
-        访问网站
+        访问网站(启动request进程)
         :return:
         """
         if self.request is None:
             raise ValueError("[WebsiteCaptureThread] Request 线程不存在")
 
         LogUtil().debug(self.task_name, f"[WebsiteCaptureThread] Request 线程开始发送请求")
+
         # request进程启动
         self.request.start()
         # 阻塞等待request进程执行结束
@@ -263,6 +293,10 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
 
 
     def __unload_extension(self):
+        """
+        卸载扩展
+        :return:
+        """
         if self.extension is None:
             LogUtil().debug(self.task_name, f"[WebsiteCaptureThread] 没有扩展需要卸载")
             return
@@ -279,13 +313,15 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
 
     def __stop_sniffer(self):
         """
-        停止嗅探
+        停止流量嗅探模块
         :return:
         """
         LogUtil().debug(self.task_name, f"[WebsiteCaptureThread] 正在停止 Sniffer 模块")
 
+        # 1. 停止scapy线程
         if self.sniffer_scapy_thread is not None:
             self.sniffer_scapy_thread.stop()
+        # 2. 停止ConnectionTracker线程
         if self.sniffer_conn_tracker_thread is not None:
             self.sniffer_conn_tracker_thread.stop()
 
@@ -294,9 +330,11 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
 
     def __filter_pcap(self):
         """
-        过滤pcap文件
+        根据ConnectionTracker跟踪的连接, 过滤pcap文件
+            注: 如果是代理, 无需过滤
         :return:
         """
+        # 如果扩展是代理则无需过滤
         if self.__is_extension_proxy() is True:
             LogUtil().debug(self.task_name, f"[WebsiteCaptureThread] 代理下无需过滤")
             return
@@ -305,9 +343,9 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
 
         # scapy 嗅探信息(pcap路径和connection列表)
         pcap_path = self.sniffer_scapy_thread.output_file
-        # 只取Connection对象列表, 不要原dict
-        conns = self.sniffer_conn_tracker_thread.get_connections_list()
-        # 根据 scapy 嗅探信息过滤pcap文件
+        conns = self.sniffer_conn_tracker_thread.get_connections_list()  # 只取Connection对象列表, 不要原dict
+
+        # 根据 scapy 抓的包与连接列表, 过滤pcap文件
         ConnectionsFilter.filter_pcap(pcap_path=pcap_path, connections_list=conns)
         pass
 
@@ -350,6 +388,11 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
 
 
     def clear(self):
+        """
+        清理方法, 用于线程退出时执行
+        :return:
+        """
+        # 没什么需要清理的, 空着就好
         pass
 
 

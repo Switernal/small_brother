@@ -1,0 +1,50 @@
+# 任务名称
+task_name: test_task
+# 任务备注
+task_note: 测试任务
+# 任务类型
+task_type: website_single_tab
+# 网站列表文件路径(绝对路径)
+website_list_path: 'personalized/data/website/website_list/crux_top_5000.txt'
+# 输出主目录(绝对路径)
+output_dir: 'personalized/data/website/output'
+# 抓取策略
+capture_policy:
+  capture_times: 2                # 每个网站的抓取次数
+  visit_interval: 0               # 每次抓取间隔(秒, 0代表无间隔)
+# 任务上下文
+capture_context:
+  status: initial                 # 任务执行状态
+  counter: 0                      # 计数器(记录执行到第几个网站)
+  last_perform_time: None         # 最后执行时间
+  capture_performed_times: 0      # 第counter网站已经抓取的次数
+# 流量嗅探配置
+sniffer_config:
+  scapy_config:                   # scapy 配置
+    network_interface: 'en0'      # 网卡
+    filter_expr: 'host 192.168.1.1 and port 443'    # 流量过滤器
+# 抓取偏好设置
+preference:
+  save_log: true                  # 是否保存日志(暂时没用)
+  save_screenshot: true           # 保存网站截图
+# 扩展配置
+extension_config:
+  extension_type: proxy           # 扩展类型
+  proxy_type: mihomo              # 代理类型
+  # 代理协议栈
+  protocol_stack:
+    control_protocol: vless
+    security_protocol: reality-xtls-rprx-vision
+    transport_protocol: tcp
+    remote_address: 192.168.1.1
+    remote_port: 443
+  # 代理的配置, 以下路径均为绝对路径
+  proxy_config:
+    basic_config_dir: 'personalized/extension/proxy/mihomo/basic_configs'
+    work_dir: 'personalized/extension/proxy/mihomo/basic_configs'
+    node_config_dir: 'personalized/extension/proxy/mihomo/node_config'
+    config_file_path: 'personalized/extension/proxy/mihomo/node_config/mihomo_config_vless_reality-xtls-rprx-vision_tcp.yaml'
+    binary_file_path: 'personalized/extension/proxy/mihomo/binary_file/mihomo-verge_darwin_arm64'
+# 请求配置
+request_config:
+  request_type: browser_chrome_single_tab     # 请求类型

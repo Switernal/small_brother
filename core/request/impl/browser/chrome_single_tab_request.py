@@ -2,6 +2,8 @@ __doc__ = "Chrome单标签请求线程"
 __author__ = "Li Qingyun"
 __date__ = "2025-02-27"
 
+from time import sleep
+
 import psutil
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -224,6 +226,7 @@ class ChromeSingleTabRequest(RequestThread):
 
         screenshot_file_path = PathUtil.file_path_join(self.screenshot_dir, file_path=self.screenshot_name)
         self.web_driver.save_screenshot(screenshot_file_path)
+        sleep(0.5)
         LogUtil().debug(self.task_name, f'[BrowserRunner] 网页截图保存成功: {screenshot_file_path}')
 
 

@@ -13,6 +13,10 @@ from core.util.multithreading.better_thread import BetterThread
 
 
 class TaskThread(BetterThread, metaclass=ABCMeta):
+    """
+    任务线程类
+        任务线程是线程的包装, 直接通过.start()方法启动
+    """
     def __init__(self,
                  task_name: str = None,
                  task_config_file_path: str=None,

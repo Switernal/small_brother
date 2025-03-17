@@ -1,0 +1,22 @@
+# 任务组名称
+task_group_name: test_task_group
+# 任务组备注
+task_group_note: 这是个测试任务组
+# 最大同时并发执行的任务线程数
+max_concurrent_num: 2
+# 任务组列表
+task_list:
+    # 任务名, 和任务描述文件中的名称最好一致
+  - task_name: test_task_1
+    # 任务描述文件绝对路径
+    task_file_path: example/task/website/task_description_example/TaskDescription-test_task_direct.yaml
+    # 任务执行状态
+    status: finished  # finished 为 执行完成
+
+  - task_name: test_task_2
+    task_file_path: example/task/website/task_description_example/TaskDescription-test_task_proxy.yaml
+    status: performing  # performing 为 执行中
+
+  - task_name: test_task_3
+    task_file_path: sexample/task/website/task_description_example/TaskDescription-test_task_proxy.yaml
+    status: standby   # standby 为 等待执行
