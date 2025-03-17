@@ -62,8 +62,8 @@ class MihomoProxyConfig(ProxyConfig):
         elif platform.system() == "Darwin":     # macOS
             binary_file_name = 'mihomo-verge_darwin_arm64'
         elif platform.system() == "Windows":
-            # _EXECUTABLE_FILE = 'mihomo-verge_windows_x86_64.exe'
-            raise ValueError(f"暂不支持 Windows")
+            binary_file_name = 'mihomo-verge_windows_x86_64.exe'
+            # raise ValueError(f"暂不支持 Windows")
         else:
             raise ValueError(f"不支持的系统: {platform.system()}")
         # 二进制文件路径
