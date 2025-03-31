@@ -2,6 +2,8 @@ __doc__="pcap连接过滤"
 __author__="Li Qingyun"
 __date__="2025-03-07"
 
+import stat
+
 from scapy.all import *
 from scapy.layers.inet import TCP, UDP, IP
 from scapy.layers.inet6 import IPv6
@@ -125,8 +127,16 @@ class ConnectionsFilter:
         temp_path = self.pcap_path.with_suffix(".tmp")
         wrpcap(str(temp_path), filtered, linktype=1)
 
-        # 原子化替换原文件
-        temp_path.replace(self.pcap_path)
+        try:
+            # 尝试原子替换(Unix和Linux系统下)
+            temp_path.replace(self.pcap_path)
+        except PermissionError:
+            # 处理权限或占用问题(主要是Windows可能会报Permission Denied)
+            if self.pcap_path.exists():
+                os.chmod(self.pcap_path, stat.S_IWRITE)
+                os.remove(self.pcap_path)
+            os.rename(temp_path, self.pcap_path)
+
         LogUtil().debug('main', f"已过滤并覆盖文件: {self.pcap_path} (保留包数: {len(filtered)}/{len(packets)})")
 
 
