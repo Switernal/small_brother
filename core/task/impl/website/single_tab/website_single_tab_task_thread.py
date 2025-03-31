@@ -118,7 +118,12 @@ class WebsiteSingleTabTaskThread(TaskThread):
         counter = self.task_config.capture_context.counter
         if counter > 0:
             # 从上下文中获取上一次执行到第几个网站, 读取网站列表, 定位到那个网站
-            self.website_list_dataloader.seek_to_line(counter)
+            try:
+                self.website_list_dataloader.seek_to_line(counter)
+            except ValueError:
+                LogUtil().error(self.task_config.task_name, f'[WebsiteSingleTabTaskThread] 任务上下文中的计数器超出网站列表范围, 退出执行')
+                self.task_being_interrupted()
+                return
 
 
     def continue_perform(self):

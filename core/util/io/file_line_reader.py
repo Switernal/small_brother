@@ -36,7 +36,7 @@ class FileLineReader:
         :return:
         """
         if line_number < 0 or line_number >= len(self.offsets):
-            raise ValueError(f"Line number must be between 0 and {len(self.offsets) - 1}")
+            raise ValueError(f"[FileLineReader] 行号必须在 0 到 {self.get_total_line_num() - 1}(总行数-1) 之间")
         self._file.seek(self.offsets[line_number])
         self.current_line = line_number
 
@@ -104,7 +104,7 @@ class FileLineReader:
         是否完成
         :return: bool
         """
-        if self.current_line > len(self.offsets):
+        if self.current_line >= self.get_total_line_num():
             return True
         else:
             return False
