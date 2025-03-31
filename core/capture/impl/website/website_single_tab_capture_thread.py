@@ -230,26 +230,26 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
             file_path=f'{self.url_for_dir}_{self.__create_time_str}.pcap'
         )
         # 2. 创建scapy线程, 但需要检查是否传入scapy_config, 如果传入了应该特别处理
-        if self.sniffer_scapy_config is None or self.sniffer_scapy_config.get('filter_expr') is None:
-            # 2.1 没有传入scapy_config
-            filter_expr = None  # scapy的过滤器表达式
-            # 2.1.1 如果是代理, 需要把远程地址和端口生成一个过滤表达式传入scapy
-            if self.__is_extension_proxy():
-                remote_addr = self.extension_info.get('protocol_stack').remote_address
-                remote_port = self.extension_info.get('protocol_stack').remote_port
-                filter_expr = f"host {remote_addr} and port {remote_port}"
-            # 2.1.2 创建scapy线程
-            self.sniffer_scapy_thread = ScapyThread(task_name=self.task_name,
-                                                    output_file_path=self.__pcap_path,
-                                                    filter_expr=filter_expr)
-        else:
-            # 2.2 如果传入了sniffer_config
-            # 2.2.1 如果配置中没有指定保存目录, 就把生成的pcap目录设置进去
-            if self.sniffer_scapy_config.get('output_file_path') is None:
-                self.sniffer_scapy_config.update({'output_file_path': self.__pcap_path})
-            # 2.2.2 创建scapy线程
-            self.sniffer_scapy_thread = ScapyThread.create_scapy_thread_by_config(task_name=self.task_name,
-                                                                                  config=self.sniffer_scapy_config)
+
+        # 2.1 如果没有Config,先创建一个
+        if self.sniffer_scapy_config is None:
+            self.sniffer_scapy_config = {}
+
+        # 2.2 如果是代理且没有指定表达式, 需要把远程地址和端口生成一个过滤表达式传入scapy
+        if self.__is_extension_proxy() and self.sniffer_scapy_config.get('filter_expr') is None:
+            # 主动创建一个但是没有传入scapy_config
+            remote_addr = self.extension_info.get('protocol_stack').remote_address
+            remote_port = self.extension_info.get('protocol_stack').remote_port
+            filter_expr = f"host {remote_addr} and port {remote_port}"
+            self.sniffer_scapy_config.update({'filter_expr': filter_expr})
+
+        # 2.3 如果配置中没有指定保存目录, 就把生成的pcap目录设置进去
+        if self.sniffer_scapy_config.get('output_file_path') is None:
+            self.sniffer_scapy_config.update({'output_file_path': self.__pcap_path})
+
+        # 2.3 根据 sniffer_config 创建
+        self.sniffer_scapy_thread = ScapyThread.create_scapy_thread_by_config(task_name=self.task_name,
+                                                                              config=self.sniffer_scapy_config)
         # end if
 
         # 3. 启动scapy线程
