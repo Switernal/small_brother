@@ -2,6 +2,8 @@ __doc__ = "Chrome单标签请求线程"
 __author__ = "Li Qingyun"
 __date__ = "2025-02-27"
 
+import os
+import platform
 from time import sleep
 
 import psutil
@@ -112,8 +114,12 @@ class ChromeSingleTabRequest(RequestThread):
 
         # 查找 chromedriver 的子进程（即 Chrome 主进程）
         chrome_main_pid = None
+
+        # Chrome进程名, Linux为'google-chrome', Mac和Linux为'Google Chrome'
+        chrome_process_name = 'google-chrome' if platform.system() == "Linux" else 'Google Chrome'
+
         for proc in psutil.process_iter(['pid', 'ppid', 'name', 'cmdline']):
-            if proc.ppid() == chromedriver_pid and 'Google Chrome' in ' '.join(proc.cmdline()):
+            if proc.ppid() == chromedriver_pid and chrome_process_name in ' '.join(proc.cmdline()):
                 chrome_main_pid = proc.pid
                 break
 
