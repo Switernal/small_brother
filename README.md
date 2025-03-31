@@ -26,13 +26,44 @@
 推荐使用 Anaconda.
 
 ### 1.2 Selenium 设置
+如欲启动浏览器抓取网站流量, 需安装 Chrome.
 
-如欲启动浏览器抓取网站流量, Windows 和 Mac 用户请先安装 Chrome.
+#### a. Windows 和 Mac
 
+Windows 和 Mac 用户请直接安装桌面版 Chrome.
+
+#### b. Linux
 linux 用户请先安装 Chrome, 并下载对应版本的 ChromeDriver. 
-然后将 ChromeDriver 压缩包解压后, 将 `chromedriver-linux64` 放入 `/usr/bin` 目录中
+然后将 ChromeDriver 压缩包解压后, 将 `chromedriver` 放入 `/usr/bin` 目录中.
 
 Chrome 及 ChromeDriver 下载地址: https://googlechromelabs.github.io/chrome-for-testing/#stable
+
+如不了解如何安装, 可按以下步骤操作:
+
+1. 使用以下指令安装 Chrome
+```shell
+# 对于Ubuntu/Debian系统
+sudo apt-get update
+sudo apt-get install google-chrome-stable
+
+# 对于CentOS/RHEL系统：
+sudo yum update
+sudo yum install google-chrome-stable
+```
+
+2. 安装后通过以下命令查询当前 Chrome 版本
+```shell
+google-chrome -version
+```
+输出示例: `Google Chrome 134.0.6998.165`
+
+3. 使用以下命令安装ChromeDriver, version请改为上一个指令输出的内容
+```shell
+version=134.0.6998.165
+wget "https://storage.googleapis.com/chrome-for-testing-public/${version}/linux64/chromedriver-linux64.zip"
+unzip chromedriver_linux64.zip
+sudo mv ./chromedriver-linux64/chromedriver /usr/bin/
+```
 
 ## 2. 使用示例
 
