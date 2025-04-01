@@ -2,6 +2,9 @@ __doc__ = "网站单标签任务示例"
 __author__ = "Li Qingyun"
 __date__ = "2025-03-17"
 
+import os
+import sys
+sys.path.append(os.getcwd())
 
 from core.task.impl.website.single_tab.website_single_tab_task_thread import WebsiteSingleTabTaskThread
 from core.util import PathUtil
