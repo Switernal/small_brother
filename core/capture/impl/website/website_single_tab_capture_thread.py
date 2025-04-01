@@ -244,8 +244,7 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
             self.sniffer_scapy_config.update({'filter_expr': filter_expr})
 
         # 2.3 如果配置中没有指定保存目录, 就把生成的pcap目录设置进去
-        if self.sniffer_scapy_config.get('output_file_path') is None:
-            self.sniffer_scapy_config.update({'output_file_path': self.__pcap_path})
+        self.sniffer_scapy_config.update({'output_file_path': self.__pcap_path})
 
         # 2.3 根据 sniffer_config 创建
         self.sniffer_scapy_thread = ScapyThread.create_scapy_thread_by_config(task_name=self.task_name,
