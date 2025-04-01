@@ -53,10 +53,10 @@ class TaskSnifferConfig:
         """
         _result = {}
 
-        if len(self.scapy_config_dict.keys()) > 0:
+        if self.scapy_config_dict is not None and len(self.scapy_config_dict.keys()) > 0:
             _result.update({'scapy_config': self.scapy_config_dict})
 
-        if len(self.connection_tracker_config_dict.keys()) > 0:
+        if self.connection_tracker_config_dict is not None and len(self.connection_tracker_config_dict.keys()) > 0:
             _result.update({'connection_tracker_config': self.connection_tracker_config_dict})
 
         return _result
