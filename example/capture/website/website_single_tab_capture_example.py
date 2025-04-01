@@ -2,6 +2,9 @@ __doc__ = "网站单标签单次抓取流程示例"
 __author__ = "Li Qingyun"
 __date__ = "2025-03-17"
 
+import os
+import sys
+sys.path.append(os.getcwd())
 
 from core.capture.impl.website.website_single_tab_capture_thread import WebsiteSingleTabCaptureThread
 from core.extension import ExtensionType, ProxyType, ProtocolStack
