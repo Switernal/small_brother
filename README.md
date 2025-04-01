@@ -57,7 +57,7 @@ google-chrome -version
 ```
 输出示例: `Google Chrome 134.0.6998.165`
 
-3. 使用以下命令安装ChromeDriver, version请改为上一个指令输出的内容
+3. 使用以下命令安装ChromeDriver. 请将version后的值改为上一个指令输出的版本号.
 ```shell
 version=134.0.6998.165
 wget "https://storage.googleapis.com/chrome-for-testing-public/${version}/linux64/chromedriver-linux64.zip"
