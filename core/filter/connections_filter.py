@@ -127,17 +127,23 @@ class ConnectionsFilter:
         temp_path = self.pcap_path.with_suffix(".tmp")
         wrpcap(str(temp_path), filtered, linktype=1)
 
-        try:
-            # 尝试原子替换(Unix和Linux系统下)
-            temp_path.replace(self.pcap_path)
-        except PermissionError:
-            # 处理权限或占用问题(主要是Windows可能会报Permission Denied)
-            if self.pcap_path.exists():
-                os.chmod(self.pcap_path, stat.S_IWRITE)
-                os.remove(self.pcap_path)
-            os.rename(temp_path, self.pcap_path)
+        # 等待一段时间，确保文件句柄被释放
+        time.sleep(0.2)  # 可根据实际情况调整延迟时间
 
-        LogUtil().debug('main', f"已过滤并覆盖文件: {self.pcap_path} (保留包数: {len(filtered)}/{len(packets)})")
+        max_retries = 3
+        retry_count = 0
+        while retry_count < max_retries:
+            try:
+                # 原子化替换原文件
+                temp_path.replace(self.pcap_path)
+                LogUtil().debug('main',
+                                f"已过滤并覆盖文件: {self.pcap_path} (保留包数: {len(filtered)}/{len(packets)})")
+                break
+            except PermissionError:
+                retry_count += 1
+                time.sleep(1)  # 每次重试前等待1秒
+                if retry_count == max_retries:
+                    LogUtil().error('main', f"无法替换文件 {self.pcap_path}，达到最大重试次数")
 
 
 
