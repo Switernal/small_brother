@@ -149,30 +149,31 @@ class WebsiteSingleTabTaskThread(TaskThread):
                   unit='个网站'
                   ) as task_progress_bar:
 
-            with tqdm(total=0, desc=f"任务 [{self.task_config.task_name}] 当前正在抓取网站", unit='次') as website_progress_bar:
+            # 从定位的网站遍历网站列表
+            while self.website_list_dataloader.is_finish() is False:  # 读取未结束的情况下
+                # 0. 检查停止标志
+                if self.stop_event.is_set():
+                    # 如果有终止信号, 就停止任务
+                    self.task_being_interrupted()
+                    return
 
-                # 从定位的网站遍历网站列表
-                while self.website_list_dataloader.is_finish() is False:  # 读取未结束的情况下
-                    # 0. 检查停止标志
-                    if self.stop_event.is_set():
-                        # 如果有终止信号, 就停止任务
-                        self.task_being_interrupted()
-                        return
+                # 1. 当前的 url
+                now_url = self.website_list_dataloader.read_line()
+                LogUtil().debug(self.task_config.task_name, f'[WebsiteSingleTabTaskThread] 当前网站: {now_url}')
 
-                    # 1. 当前的 url
-                    now_url = self.website_list_dataloader.read_line()
-                    LogUtil().debug(self.task_config.task_name, f'[WebsiteSingleTabTaskThread] 当前网站: {now_url}')
-                    website_progress_bar.desc = f"任务 [{self.task_config.task_name}] 当前正在抓取网站: {now_url}"
+                # 2. 如果context中已经抓取的次数没有达到policy中的次数, 就执行
+                if self.task_config.capture_context.capture_performed_times < self.task_config.capture_policy.capture_times:
 
-                    # 2. 如果context中已经抓取的次数没有达到达到了policy中的次数, 就执行
-                    if self.task_config.capture_context.capture_performed_times < self.task_config.capture_policy.capture_times:
+                    # 2.1 计算当前网站剩余抓取次数
+                    capture_times_left = self.task_config.capture_policy.capture_times - \
+                                        self.task_config.capture_context.capture_performed_times
 
-                        # 2.1 计算当前网站剩余抓取次数
-                        capture_times_left = self.task_config.capture_policy.capture_times - \
-                                             self.task_config.capture_context.capture_performed_times
-                        # 2.2 循环抓取
-                        website_progress_bar.total = capture_times_left
-                        website_progress_bar.n = 0
+                    # **在这里创建新的 website_progress_bar**
+                    with tqdm(total=capture_times_left,
+                            desc=f"任务 [{self.task_config.task_name}] 当前正在抓取网站: {now_url}",
+                            unit='次') as website_progress_bar:
+
+                        website_progress_bar.n = 0  # 重置进度条
                         for capture_num in range(1, capture_times_left + 1):
                             # 4.1 检查终止信号
                             if self.stop_event.is_set():
@@ -233,24 +234,26 @@ class WebsiteSingleTabTaskThread(TaskThread):
                             # 更新任务执行进度
                             self.task_progress.update_current_progress(self.website_list_dataloader.get_current_line_num())
 
+                            # 更新进度条
                             website_progress_bar.update(1)
                             pass
-                        # end for capture_num (一个网站内的次数抓完了)
+                        # end for capture_num
+                # end if
 
-                    # 移到下一个网站
-                    self.website_list_dataloader.move_next_line()
+                # 移到下一个网站
+                self.website_list_dataloader.move_next_line()
 
-                    # 更新上下文
-                    self.task_config.capture_context.update_counter(self.website_list_dataloader.current_line)
-                    self.task_config.capture_context.update_last_perform_time(TimeUtil.now_time_str())
-                    # 清空上下文中网站的抓取次数
-                    self.task_config.capture_context.clear_capture_performed_times()
+                # 更新上下文
+                self.task_config.capture_context.update_counter(self.website_list_dataloader.current_line)
+                self.task_config.capture_context.update_last_perform_time(TimeUtil.now_time_str())
+                # 清空上下文中网站的抓取次数
+                self.task_config.capture_context.clear_capture_performed_times()
 
-                    # 保存一下任务
-                    self.save_config_to_disk()
+                # 保存一下任务
+                self.save_config_to_disk()
 
-                    task_progress_bar.update(1)
-                # end while
+                task_progress_bar.update(1)
+            # end while
             # end tqdm website_progress_bar
         # end tqdm task_progress_bar
 
