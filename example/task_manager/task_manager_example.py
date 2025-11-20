@@ -2,6 +2,10 @@ __doc__ = "任务管理器使用示例"
 __author__ = "Li Qingyun"
 __date__ = "2025-03-17"
 
+import os
+import sys
+sys.path.append(os.getcwd())
+
 from core.task.task_manager.task_manager import TaskManager
 from core.util import PathUtil
 from core.util.io.log_util import LogUtil

@@ -204,6 +204,7 @@ class ChromeSingleTabRequest(RequestThread):
         self.options.add_argument("--disable-gpu")                      # 禁用 GPU 硬件加速
         # self.options.add_argument("--remote-debugging-port=9222")     # 固定调试端口
         self.options.add_argument("--dns-prefetch-disable")             # 禁用DNS预取
+        self.options.add_argument('--enable-unsafe-swiftshader')        # 启用 SwiftShader，这是一种基于软件的图形渲染器，防止硬件加速问题
         self.options.add_argument(                                      # UA标识
             "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         )
