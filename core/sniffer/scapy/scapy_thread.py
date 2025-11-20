@@ -8,6 +8,7 @@ from scapy.all import *
 
 from core.util.io.log_util import LogUtil
 from core.util.multithreading.better_thread import BetterThread
+from core.util.network.network_interface_util import NetworkInterfaceUtil
 
 
 class ScapyThread(BetterThread):
@@ -43,12 +44,17 @@ class ScapyThread(BetterThread):
 
     def _detect_interface(self,network_interface):
         """自动检测网络接口"""
-        if network_interface is not None:
+        # 如果传入了指定网卡, 就用指定的
+        if network_interface is not None and network_interface != 'none':
             return network_interface
-        if platform.system() == 'Linux':
-            return 'eth0'
-        else:
-            return 'en0'
+
+        # 如果没指定,先尝试用网卡util获取一下活跃的物理网卡
+        active_physical_interface = NetworkInterfaceUtil().get_active_physical_interface()
+        if active_physical_interface is not None:
+            return NetworkInterfaceUtil().get_active_physical_interface()
+
+        # 如果还是没获取到, 就抛个异常
+        raise ValueError('[ScapyThread] 没有可用网卡, 请手动指定网卡名称')
 
 
     def run(self):

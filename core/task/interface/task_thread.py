@@ -6,8 +6,9 @@ from abc import ABCMeta, abstractmethod
 
 from core.task.const.task_type import TaskType
 from core.task.interface.task_config import TaskConfig
-from core.task.interface.task_config.task_capture_context import TaskCaptureContext, TaskStatus
+from core.task.interface.task_config.task_capture_context import TaskStatus
 from core.task.interface.task_progress import TaskProgress
+from core.util.console.rich.panel.basic_website_task_console_panel import BasicWebsiteTaskConsolePanel
 from core.util.io.yaml_util import YamlUtil
 from core.util.multithreading.better_thread import BetterThread
 
@@ -24,7 +25,11 @@ class TaskThread(BetterThread, metaclass=ABCMeta):
                  ):
         super().__init__(name=f"TaskThread-{task_name}")
 
+        # 任务名称
         self.task_name = task_name
+
+        # 用于终端输出的 rich panel
+        self.console_panel = BasicWebsiteTaskConsolePanel(task_name=self.task_name)
 
         # 任务配置
         self.task_config_file_path = task_config_file_path

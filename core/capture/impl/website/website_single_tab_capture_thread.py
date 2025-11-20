@@ -247,6 +247,10 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
         if self.sniffer_scapy_config.get('output_file_path') is None:
             self.sniffer_scapy_config.update({'output_file_path': self.__pcap_path})
 
+        # 2.4 指定网卡
+        if self.sniffer_scapy_config.get('network_interface') is None:
+            self.sniffer_scapy_config.update({'network_interface': 'none'})
+
         # 2.3 根据 sniffer_config 创建
         self.sniffer_scapy_thread = ScapyThread.create_scapy_thread_by_config(task_name=self.task_name,
                                                                               config=self.sniffer_scapy_config)

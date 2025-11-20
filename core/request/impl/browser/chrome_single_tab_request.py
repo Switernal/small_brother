@@ -5,8 +5,10 @@ __date__ = "2025-02-27"
 import os
 import platform
 from time import sleep
+import time
 
 import psutil
+from psutil import AccessDenied, NoSuchProcess
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
@@ -115,13 +117,18 @@ class ChromeSingleTabRequest(RequestThread):
         # 查找 chromedriver 的子进程（即 Chrome 主进程）
         chrome_main_pid = None
 
-        # Chrome进程名, Linux为'google-chrome', Mac和Linux为'Google Chrome'
+        # Chrome进程名, Linux为'google-chrome', Mac和Windows为'Google Chrome'
         chrome_process_name = 'google-chrome' if platform.system() == "Linux" else 'Google Chrome'
 
-        for proc in psutil.process_iter(['pid', 'ppid', 'name', 'cmdline']):
-            if proc.ppid() == chromedriver_pid and chrome_process_name in ' '.join(proc.cmdline()):
-                chrome_main_pid = proc.pid
-                break
+        try:
+            chrome_main_pid = self.__find_chrome_main_pid(chromedriver_pid, chrome_process_name)
+        except Exception as e:
+            LogUtil().debug(self.task_name, "[BrowserRunner] 查找Chrome主进程时出错: {e}")
+
+        if chrome_main_pid:
+            LogUtil().debug(self.task_name, "[BrowserRunner] 找到Chrome主进程ID: {chrome_main_pid}")
+        else:
+            LogUtil().debug(self.task_name, "[BrowserRunner] 未能找到Chrome主进程")
 
         if not chrome_main_pid:
             LogUtil().debug(self.task_name, "[BrowserRunner] 未找到 Chrome 主进程")
@@ -148,6 +155,42 @@ class ChromeSingleTabRequest(RequestThread):
 
         return self.network_service_pid
 
+    def __find_chrome_main_pid(self, chromedriver_pid, chrome_process_name, max_retries=3, delay=0.5):
+        """
+        查找 Chrome 主进程 ID，带有重试机制
+        主要针对 Windows 平台偶尔出现 AccessDenied
+        """
+        for retry in range(max_retries):
+            try:
+                for proc in psutil.process_iter(['pid', 'ppid', 'name', 'cmdline']):
+                    try:
+                        # 检查进程的父ID和命令行
+                        if proc.ppid() == chromedriver_pid:
+                            cmdline = ' '.join(proc.cmdline())
+                            if chrome_process_name in cmdline:
+                                return proc.pid
+                    except (AccessDenied, NoSuchProcess):
+                        # 单个进程访问被拒绝或进程已不存在，继续检查下一个进程
+                        continue
+                # 如果遍历完所有进程都没有找到，返回None
+                return None
+
+            except AccessDenied:
+                # 处理process_iter()级别的访问拒绝
+                if retry < max_retries - 1:
+                    time.sleep(delay * (retry + 1))  # 指数退避
+                    continue
+                else:
+                    raise
+            except Exception as e:
+                # 其他未预期的异常
+                if retry < max_retries - 1:
+                    time.sleep(delay * (retry + 1))
+                    continue
+                else:
+                    raise
+
+        return None
 
     # ----- 浏览器操作 -----
     def _create_and_initial_web_driver(self):
@@ -198,6 +241,11 @@ class ChromeSingleTabRequest(RequestThread):
 
         try:
             self.web_driver.get(self.url)
+
+            # 改一下这边的逻辑，超时时间改成等待时间，满足延时需求
+            if self.timeout is not None and self.timeout > 0:
+                sleep(self.timeout)
+
             if self.wait_element_id is not None:
                 WebDriverWait(self.web_driver, self.timeout).until(
                     lambda d: d.find_element(*self.wait_element_id)

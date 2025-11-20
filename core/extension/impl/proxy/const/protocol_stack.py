@@ -32,7 +32,7 @@ class SecurityProtocol(enum.Enum):
     XTLS_VISION = 'xtls-rprx-vision'                # 仅vision流控, 非udp-443版本
     REALITY = 'reality'                             # 纯reality, 无vision流控
     REALITY_VISION = 'reality-xtls-rprx-vision'     # reality+vision流控
-    NONE = 'no-extra-security'  # 无额外安全协议(通常是控制层自带加密, 如vmess, ss)
+    NONE = 'none'  # 无额外安全协议(通常是控制层自带加密, 如vmess, ss)
 
 
 class TransportProtocol(enum.Enum):

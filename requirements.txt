@@ -18,7 +18,6 @@ protobuf==6.30.2
 psutil==5.9.0
 pyOpenSSL==25.0.0
 PyYAML==6.0.2
-PyYAML==6.0.2
 railroad==0.5.0
 ruamel.base==1.0.0
 selenium==4.24.0
@@ -30,3 +29,7 @@ trove_classifiers==2025.3.19.19
 truststore==0.10.1
 urllib3_secure_extra==0.1.0
 xmlrpclib==1.0.1
+yaml==0.2.5
+ruamel-yaml==0.18.10
+rich==14.2.0
+scapy==2.6.1

@@ -72,6 +72,8 @@ class WebsiteSingleTabTaskThread(TaskThread):
             # 1.2 从中断位置继续执行任务(循环阻塞)
             self.continue_perform()
         else:
+            # 任务面板设置为全部完成
+            self.console_panel.set_all_completed()
             LogUtil().debug(self.task_config.task_name, f'[WebsiteSingleTabTaskThread] 任务 {self.task_config.task_name} 已完成, 无需执行')
 
         pass
@@ -142,119 +144,122 @@ class WebsiteSingleTabTaskThread(TaskThread):
         self.task_progress.set_total_progress(self.website_list_dataloader.get_total_line_num())
         self.task_progress.update_current_progress(self.website_list_dataloader.get_current_line_num())
 
-        # 显示任务总进度条
-        with tqdm(total=self.task_progress.total_progress,
-                  initial=self.task_progress.current_progress,
-                  desc=f"任务 [{self.task_config.task_name}] 执行进度",
-                  unit='个网站'
-                  ) as task_progress_bar:
+        # 3. 初始化console panel的数据
+        self.console_panel.init(task_name=self.task_name,
+                                visited_url_count=self.task_progress.current_progress,
+                                total_url_count=self.task_progress.total_progress)
 
-            with tqdm(total=0, desc=f"任务 [{self.task_config.task_name}] 当前正在抓取网站", unit='次') as website_progress_bar:
+        # 4. 从定位的网站遍历网站列表, 直到全部网站都访问结束
+        while self.website_list_dataloader.is_finish() is False:  # 读取未结束的情况下
+            # 0. 检查停止标志
+            if self.stop_event.is_set():
+                # 如果有终止信号, 就停止任务
+                self.task_being_interrupted()
+                return
 
-                # 从定位的网站遍历网站列表
-                while self.website_list_dataloader.is_finish() is False:  # 读取未结束的情况下
-                    # 0. 检查停止标志
+            # 1. 当前的 url
+            now_url = self.website_list_dataloader.read_line()
+            LogUtil().debug(self.task_config.task_name, f'[WebsiteSingleTabTaskThread] 当前网站: {now_url}')
+
+
+            # 2. 如果context中已经抓取的次数没有达到达到了policy中的次数, 就执行
+            if self.task_config.capture_context.capture_performed_times < self.task_config.capture_policy.capture_times:
+
+                # 2.1 计算当前网站剩余抓取次数
+                capture_times_left = self.task_config.capture_policy.capture_times - \
+                                     self.task_config.capture_context.capture_performed_times
+
+                # 更新一下终端面板的抓取数据
+                self.console_panel.start_new_url(url=now_url,
+                                                 current_visit_times=self.task_config.capture_context.capture_performed_times,
+                                                 total_visit_times=self.task_config.capture_policy.capture_times
+                                                 )
+                # 2.2 循环抓取
+                for capture_num in range(1, capture_times_left + 1):
+                    # 4.1 检查终止信号
                     if self.stop_event.is_set():
                         # 如果有终止信号, 就停止任务
                         self.task_being_interrupted()
                         return
 
-                    # 1. 当前的 url
-                    now_url = self.website_list_dataloader.read_line()
-                    LogUtil().debug(self.task_config.task_name, f'[WebsiteSingleTabTaskThread] 当前网站: {now_url}')
-                    website_progress_bar.desc = f"任务 [{self.task_config.task_name}] 当前正在抓取网站: {now_url}"
+                    LogUtil().debug(self.task_config.task_name, f'[WebsiteSingleTabTaskThread] 创建抓取任务')
 
-                    # 2. 如果context中已经抓取的次数没有达到达到了policy中的次数, 就执行
-                    if self.task_config.capture_context.capture_performed_times < self.task_config.capture_policy.capture_times:
+                    # 4.2 创建抓取任务并执行
+                    # (1) 判断 extension_config 是否存在
+                    if self.task_config.extension_config is not None:
+                        extension_config_dict = self.task_config.extension_config.config_dict
+                    else:
+                        extension_config_dict = None
+                    # (2) 判断 request_config 是否存在
+                    if self.task_config.request_config is not None:
+                        request_config_dict = self.task_config.request_config.config_dict
+                    else:
+                        request_config_dict = None
+                    # (3) 判断 sniffer_config 是否存在
+                    if self.task_config.sniffer_config is None:
+                        sniffer_scapy_config = None
+                        sniffer_conn_tracker_config = None
+                    else:
+                        # (3.1) 判断 sniffer_scapy_config 是否存在
+                        if self.task_config.sniffer_config.scapy_config_dict is not None:
+                            sniffer_scapy_config = self.task_config.sniffer_config.scapy_config_dict
+                        else:
+                            sniffer_scapy_config = None
+                        # (3.2) 判断 sniffer_conn_tracker_config 是否存在
+                        if self.task_config.sniffer_config.connection_tracker_config_dict is not None:
+                            sniffer_conn_tracker_config = self.task_config.sniffer_config.connection_tracker_config_dict
+                        else:
+                            sniffer_conn_tracker_config = None
 
-                        # 2.1 计算当前网站剩余抓取次数
-                        capture_times_left = self.task_config.capture_policy.capture_times - \
-                                             self.task_config.capture_context.capture_performed_times
-                        # 2.2 循环抓取
-                        website_progress_bar.total = capture_times_left
-                        website_progress_bar.n = 0
-                        for capture_num in range(1, capture_times_left + 1):
-                            # 4.1 检查终止信号
-                            if self.stop_event.is_set():
-                                # 如果有终止信号, 就停止任务
-                                self.task_being_interrupted()
-                                return
+                    capture_thread = WebsiteSingleTabCaptureThread(
+                        task_name=self.task_config.task_name,
+                        capture_name=f'{now_url}',
+                        url=now_url,
+                        output_main_dir=self.task_config.output_dir,
+                        extension_config=extension_config_dict,
+                        request_config=request_config_dict,
+                        sniffer_scapy_config=sniffer_scapy_config,
+                        sniffer_conn_tracker_config=sniffer_conn_tracker_config
+                    )
+                    LogUtil().debug(self.task_config.task_name, f'[WebsiteSingleTabTaskThread] 启动抓取流程')
+                    # 启动抓取流程
+                    capture_thread.start()
+                    LogUtil().debug(self.task_config.task_name, f'[WebsiteSingleTabTaskThread] 抓取流程结束')
+                    # 阻塞等待执行结束
+                    capture_thread.join()
 
-                            LogUtil().debug(self.task_config.task_name, f'[WebsiteSingleTabTaskThread] 创建抓取任务')
-
-                            # 4.2 创建抓取任务并执行
-                            # (1) 判断 extension_config 是否存在
-                            if self.task_config.extension_config is not None:
-                                extension_config_dict = self.task_config.extension_config.config_dict
-                            else:
-                                extension_config_dict = None
-                            # (2) 判断 request_config 是否存在
-                            if self.task_config.request_config is not None:
-                                request_config_dict = self.task_config.request_config.config_dict
-                            else:
-                                request_config_dict = None
-                            # (3) 判断 sniffer_config 是否存在
-                            if self.task_config.sniffer_config is None:
-                                sniffer_scapy_config = None
-                                sniffer_conn_tracker_config = None
-                            else:
-                                # (3.1) 判断 sniffer_scapy_config 是否存在
-                                if self.task_config.sniffer_config.scapy_config_dict is not None:
-                                    sniffer_scapy_config = self.task_config.sniffer_config.scapy_config_dict
-                                else:
-                                    sniffer_scapy_config = None
-                                # (3.2) 判断 sniffer_conn_tracker_config 是否存在
-                                if self.task_config.sniffer_config.connection_tracker_config_dict is not None:
-                                    sniffer_conn_tracker_config = self.task_config.sniffer_config.connection_tracker_config_dict
-                                else:
-                                    sniffer_conn_tracker_config = None
-
-                            capture_thread = WebsiteSingleTabCaptureThread(
-                                task_name=self.task_config.task_name,
-                                capture_name=f'{now_url}',
-                                url=now_url,
-                                output_main_dir=self.task_config.output_dir,
-                                extension_config=extension_config_dict,
-                                request_config=request_config_dict,
-                                sniffer_scapy_config=sniffer_scapy_config,
-                                sniffer_conn_tracker_config=sniffer_conn_tracker_config
-                            )
-                            LogUtil().debug(self.task_config.task_name, f'[WebsiteSingleTabTaskThread] 启动抓取流程')
-                            # 启动抓取流程
-                            capture_thread.start()
-                            LogUtil().debug(self.task_config.task_name, f'[WebsiteSingleTabTaskThread] 抓取流程结束')
-                            # 阻塞等待执行结束
-                            capture_thread.join()
-
-                            # 抓取一次完成后, 更新上下文, 并保存任务描述文件到磁盘
-                            self.task_config.capture_context.increase_capture_performed_times()
-                            self.save_config_to_disk()
-
-                            # 更新任务执行进度
-                            self.task_progress.update_current_progress(self.website_list_dataloader.get_current_line_num())
-
-                            website_progress_bar.update(1)
-                            pass
-                        # end for capture_num (一个网站内的次数抓完了)
-
-                    # 移到下一个网站
-                    self.website_list_dataloader.move_next_line()
-
-                    # 更新上下文
-                    self.task_config.capture_context.update_counter(self.website_list_dataloader.current_line)
-                    self.task_config.capture_context.update_last_perform_time(TimeUtil.now_time_str())
-                    # 清空上下文中网站的抓取次数
-                    self.task_config.capture_context.clear_capture_performed_times()
-
-                    # 保存一下任务
+                    # 抓取一次完成后, 更新上下文, 并保存任务描述文件到磁盘
+                    self.task_config.capture_context.increase_capture_performed_times()
                     self.save_config_to_disk()
 
-                    task_progress_bar.update(1)
-                # end while
-            # end tqdm website_progress_bar
-        # end tqdm task_progress_bar
+                    # 更新任务执行进度
+                    self.task_progress.update_current_progress(self.website_list_dataloader.get_current_line_num())
+
+                    # 完成当前网站内一次访问, 更新终端面板中的数据
+                    self.console_panel.finish_one_visit_in_website()
+                    pass
+                # end for capture_num (一个网站内的次数抓完了)
+
+
+            # 移到下一个网站
+            self.website_list_dataloader.move_next_line()
+
+            # 更新上下文
+            self.task_config.capture_context.update_counter(self.website_list_dataloader.current_line)
+            self.task_config.capture_context.update_last_perform_time(TimeUtil.now_time_str())
+            # 清空上下文中网站的抓取次数
+            self.task_config.capture_context.clear_capture_performed_times()
+
+            # 保存一下任务
+            self.save_config_to_disk()
+
+            # 完成一整个网站的所有访问次数, 更新终端面板中的数据
+            self.console_panel.finish_one_website()
+        # end while
 
         # 全部完成, 结束任务流程
+        # 更新面板状态为完成
+        self.console_panel.set_all_finished()
         self.finalize()
         pass
 
