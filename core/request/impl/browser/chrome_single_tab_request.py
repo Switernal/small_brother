@@ -152,10 +152,15 @@ class ChromeSingleTabRequest(RequestThread):
         # 筛选 Network Service 进程
         # 注: Chrome会把所有网络连接交给Network Service进程处理, 只需要抓这个进程即可
         for proc in all_children:
-            cmdline = ' '.join(proc.cmdline())
-            if '--utility-sub-type=network.mojom.NetworkService' in cmdline:
-                self.network_service_pid = proc.pid
-                break
+            try:
+                cmdline = ' '.join(proc.cmdline())
+                if '--utility-sub-type=network.mojom.NetworkService' in cmdline:
+                    self.network_service_pid = proc.pid
+                    break
+            except Exception as e:
+                # 单个进程访问被拒绝或进程已不存在，继续检查下一个进程
+                LogUtil().warning(self.task_name, f"[BrowserRunner] find_children 访问进程 {proc.pid} 信息被拒绝或进程不存在, 异常信息: {e}")
+                continue
 
         return self.network_service_pid
 
@@ -262,6 +267,8 @@ class ChromeSingleTabRequest(RequestThread):
         except Exception as e:
             LogUtil().debug(self.task_name, f'[BrowserRunner] 网页 {self.url} 加载出错, 错误: {e}')
             return False
+        finally:
+            LogUtil().debug(self.task_name, f'[BrowserRunner] 网页 {self.url} 加载完成')
 
         return True
 
