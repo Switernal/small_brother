@@ -29,6 +29,7 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
                  task_name: str,
                  capture_name: str,
                  url: str,
+                 timeout: int,
                  output_main_dir: str,
                  extension_config:dict=None,
                  request_config: dict=None,
@@ -51,6 +52,7 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
         super().__init__(
             task_name=task_name,
             capture_name=f"WebsiteCaptureThread-{capture_name}",
+            timeout=timeout,
             extension_config=extension_config,
             request_config=request_config,
             sniffer_scapy_config=sniffer_scapy_config,
@@ -187,7 +189,7 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
         # 把url等参数加入config中
         self.request_config.update({
             'url': self.url,
-            'timeout': 0,
+            'timeout': self.timeout,
             'screenshot_dir': self.output_main_dir
         })
 

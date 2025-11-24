@@ -215,6 +215,7 @@ class WebsiteSingleTabTaskThread(TaskThread):
                         task_name=self.task_config.task_name,
                         capture_name=f'{now_url}',
                         url=now_url,
+                        timeout=self.task_config.capture_policy.timeout,
                         output_main_dir=self.task_config.output_dir,
                         extension_config=extension_config_dict,
                         request_config=request_config_dict,
