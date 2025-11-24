@@ -2,8 +2,12 @@ __doc__ = "网卡实用工具"
 __author__ = "Li Qingyun"
 __date__ = "2025-11-18"
 
+import platform
+
 import psutil
 import socket
+
+from scapy.arch import get_windows_if_list
 
 from core.util.python.singleton_util import Singleton
 
@@ -54,11 +58,24 @@ class NetworkInterfaceUtil:
                     candidates.append((interface_name, total_bytes))
 
         # 5. 按流量大小排序，返回流量最大的接口
+        final_interface_name = None
+
         if candidates:
             candidates.sort(key=lambda x: x[1], reverse=True)
-            return candidates[0][0]
+            final_interface_name = candidates[0][0]
 
-        return None
+        # Windows 下,网卡名称需要转换一下, 通常是"以太网X" -> "Intel (R) Ethernet Connection ..."
+        if platform.system() == "Windows":
+            # 获取Windows接口列表
+            interfaces = get_windows_if_list()
+            for iface in interfaces:
+                # iface['name'] = "以太网X"
+                # iface['description'] = "Intel (R) Ethernet Connection ..."
+                if iface['name'] == final_interface_name:
+                    final_interface_name = iface['description']
+                    break
+
+        return final_interface_name
 
 
 # 示例用法
