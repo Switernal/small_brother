@@ -14,6 +14,7 @@ class CaptureThread(BetterThread):
     def __init__(self,
                  task_name: str,
                  capture_name: str,
+                 timeout: int,
                  extension_config,
                  request_config,
                  sniffer_scapy_config,
@@ -23,6 +24,7 @@ class CaptureThread(BetterThread):
         构造函数
         :param task_name:                       隶属于的任务名
         :param capture_name:                    Capture进程名称
+        :param timeout:                         抓取超时时间(秒)
         :param extension_config:                Extension子线程配置
         :param request_config:                  Request子线程配置
         :param sniffer_scapy_config:            Scapy抓包子线程配置
@@ -33,6 +35,9 @@ class CaptureThread(BetterThread):
         # 进程信息
         self.task_name = task_name
         self.capture_name = capture_name
+
+        # 抓取超时时间
+        self.timeout = timeout
 
         # 配置字典
         self.extension_config = extension_config

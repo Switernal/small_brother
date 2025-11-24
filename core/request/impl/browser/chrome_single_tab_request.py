@@ -247,7 +247,7 @@ class ChromeSingleTabRequest(RequestThread):
         try:
             self.web_driver.get(self.url)
 
-            # 改一下这边的逻辑，超时时间改成等待时间，满足延时需求
+            # todo: 临时改一下这边的逻辑，超时时间改成等待时间，满足延时需求
             if self.timeout is not None and self.timeout > 0:
                 sleep(self.timeout)
 
