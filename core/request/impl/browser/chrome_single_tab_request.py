@@ -117,22 +117,26 @@ class ChromeSingleTabRequest(RequestThread):
         # 查找 chromedriver 的子进程（即 Chrome 主进程）
         chrome_main_pid = None
 
-        # Chrome进程名, Linux为'google-chrome', Mac和Windows为'Google Chrome'
-        chrome_process_name = 'google-chrome' if platform.system() == "Linux" else 'Google Chrome'
+        # Chrome进程名, Windows为'chrome.exe', Linux为'google-chrome', Mac为'Google Chrome'
+        chrome_process_name = 'Google Chrome'
 
+        if platform.system() == 'Windows':
+            chrome_process_name = 'chrome.exe'
+        elif platform.system() == "Linux":
+            chrome_process_name = 'google-chrome'
+        elif platform.system() == "Darwin":
+            chrome_process_name = 'Google Chrome'
+
+        # 尝试获取chrome进程名, Windows下有时会发生 Access Denied, 需要异常处理
         try:
             chrome_main_pid = self.__find_chrome_main_pid(chromedriver_pid, chrome_process_name)
         except Exception as e:
-            LogUtil().debug(self.task_name, "[BrowserRunner] 查找Chrome主进程时出错: {e}")
+            LogUtil().debug(self.task_name, f"[BrowserRunner] 查找 Chrome 主进程时出错: {e}")
 
         if chrome_main_pid:
-            LogUtil().debug(self.task_name, "[BrowserRunner] 找到Chrome主进程ID: {chrome_main_pid}")
+            LogUtil().debug(self.task_name, f"[BrowserRunner] 找到 Chrome 主进程ID: {chrome_main_pid}")
         else:
-            LogUtil().debug(self.task_name, "[BrowserRunner] 未能找到Chrome主进程")
-
-        if not chrome_main_pid:
-            LogUtil().debug(self.task_name, "[BrowserRunner] 未找到 Chrome 主进程")
-            return None
+            LogUtil().debug(self.task_name, "[BrowserRunner] 未能找到 Chrome 主进程")
 
         # 递归查找 Chrome 主进程的所有子进程
         def find_children(pid):
