@@ -112,9 +112,9 @@ class LogUtil:
         """
         if not self.enable_log:
             return
-        self.get_logger(logger_name).warning(msg)   # todo: INFO和DEBUG无法输出的问题暂时解决不了
+        self.get_logger(logger_name).warning("[INFO] " + msg)   # todo: INFO和DEBUG无法输出的问题暂时解决不了
         if logger_name != 'main':
-            self.get_logger('main').warning(msg)    # todo: INFO和DEBUG无法输出的问题暂时解决不了
+            self.get_logger('main').warning("[INFO] " + msg)    # todo: INFO和DEBUG无法输出的问题暂时解决不了
 
 
     def debug(self, logger_name: str, msg):
@@ -126,9 +126,9 @@ class LogUtil:
         """
         if not self.enable_log:
             return
-        self.get_logger(logger_name).warning(msg)   # todo: INFO和DEBUG无法输出的问题暂时解决不了
+        self.get_logger(logger_name).warning("[DEBUG] " + msg)   # todo: INFO和DEBUG无法输出的问题暂时解决不了
         if logger_name != 'main':
-            self.get_logger('main').warning(msg)    # todo: INFO和DEBUG无法输出的问题暂时解决不了
+            self.get_logger('main').warning("[DEBUG] " + msg)    # todo: INFO和DEBUG无法输出的问题暂时解决不了
 
 
     def warning(self, logger_name: str, msg):

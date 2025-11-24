@@ -67,7 +67,7 @@ class ScapyThread(BetterThread):
             self._capture()
             LogUtil().debug(self.task_name, '[ScapyProcess] 抓包程序已结束')
         except PermissionError:
-            LogUtil().error("需要root权限执行抓包，请使用sudo运行脚本")
+            LogUtil().error(self.task_name, "需要root权限执行抓包，请使用sudo运行脚本")
             exit(1)
 
 
@@ -76,14 +76,17 @@ class ScapyThread(BetterThread):
         抓取流量的核心方法
         :return:
         """
-        while not self.stop_event.is_set():
-            # 使用sniff抓包，并设置timeout以便及时检查stop_event
-            sniff(
-                filter=self.filter_expr,
-                iface=self.network_interface,
-                prn=lambda x: wrpcap(self.output_file, x, append=True),
-                timeout=1  # 每隔1秒检查一次stop_event
-            )
+        # 停止条件
+        def stop_condition(packet):
+            return self.stop_event.is_set()
+
+        # 使用sniff抓包，并设置timeout以便及时检查stop_event
+        sniff(
+            filter=self.filter_expr,
+            iface=self.network_interface,
+            prn=lambda x: wrpcap(self.output_file, x, append=True),
+            stop_filter=stop_condition
+        )
 
 
     def clear(self):

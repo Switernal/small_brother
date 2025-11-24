@@ -7,8 +7,6 @@ import platform
 import psutil
 import socket
 
-from scapy.arch import get_windows_if_list
-
 from core.util.python.singleton_util import Singleton
 
 @Singleton
@@ -67,6 +65,7 @@ class NetworkInterfaceUtil:
         # Windows 下,网卡名称需要转换一下, 通常是"以太网X" -> "Intel (R) Ethernet Connection ..."
         if platform.system() == "Windows":
             # 获取Windows接口列表
+            from scapy.arch import get_windows_if_list
             interfaces = get_windows_if_list()
             for iface in interfaces:
                 # iface['name'] = "以太网X"
