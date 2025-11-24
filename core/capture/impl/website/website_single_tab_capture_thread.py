@@ -13,6 +13,7 @@ from core.sniffer.connection.connection_tracker_thread import ConnectionTrackerT
 from core.sniffer.scapy.scapy_thread import ScapyThread
 from core.util.io.log_util import LogUtil
 from core.util.io.path_util import PathUtil
+from core.util.network.network_interface_util import NetworkInterfaceUtil
 from core.util.network.port_pool import PortPool
 from core.util.string.time_util import TimeUtil
 from core.util.string.url_util import UrlUtil
@@ -248,7 +249,9 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
 
         # 2.4 指定网卡
         if self.sniffer_scapy_config.get('network_interface') is None:
-            self.sniffer_scapy_config.update({'network_interface': 'none'})
+            # 如果没指定, 先尝试用网卡util获取一下活跃的物理网卡
+            active_physical_interface = NetworkInterfaceUtil().get_active_physical_interface()
+            self.sniffer_scapy_config.update({'network_interface': active_physical_interface})
 
         # 2.3 根据 sniffer_config 创建
         self.sniffer_scapy_thread = ScapyThread.create_scapy_thread_by_config(task_name=self.task_name,

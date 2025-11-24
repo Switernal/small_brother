@@ -76,17 +76,22 @@ class ScapyThread(BetterThread):
         抓取流量的核心方法
         :return:
         """
-        # 停止条件
-        def stop_condition(packet):
-            return self.stop_event.is_set()
+        LogUtil().debug(self.task_name, f'[ScapyProcess] 开启 sniff')
+        LogUtil().debug(self.task_name, f'[ScapyProcess] 网卡: {self.network_interface}')
+        LogUtil().debug(self.task_name, f'[ScapyProcess] pcap文件: {self.output_file}')
 
-        # 使用sniff抓包，并设置timeout以便及时检查stop_event
-        sniff(
-            filter=self.filter_expr,
-            iface=self.network_interface,
-            prn=lambda x: wrpcap(self.output_file, x, append=True),
-            stop_filter=stop_condition
-        )
+        # 使用sniff抓包，并设置stop_filter以便及时检查stop_event
+        try:
+            sniff(
+                filter=self.filter_expr,
+                iface=self.network_interface,
+                prn=lambda pkt: wrpcap(self.output_file, pkt, append=True),
+                stop_filter=lambda pkt: self.stop_event.is_set()
+            )
+        except Exception as e:
+            LogUtil().error(self.task_name, f'[ScapyProcess] 抓包出现异常: {e}')
+        finally:
+            LogUtil().debug(self.task_name, f'[ScapyProcess] sniff 结束')
 
 
     def clear(self):
