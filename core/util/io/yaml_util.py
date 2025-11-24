@@ -2,6 +2,8 @@ __doc__ = "YAML读写工具类"
 __author__ = "Li Qingyun"
 __date__ = "2025-02-26"
 
+from threading import Lock
+
 import yaml
 from ruamel.yaml import YAML, CommentedMap
 
@@ -15,6 +17,9 @@ class YamlUtil:
     """
 
     def __init__(self):
+        # 乐观锁, 写时获取
+        self._lock = Lock()
+
         self._write_yaml = YAML()
         self._write_yaml.indent(mapping=2, sequence=4, offset=2)
         self._write_yaml.allow_unicode = True     # 正常保存中文
@@ -45,8 +50,9 @@ class YamlUtil:
         :param file_path:
         :return:
         """
-        with open(file_path, 'w', encoding='utf-8') as file:
-            yaml.safe_dump(data, file, allow_unicode=True, sort_keys=False)
+        with self._lock:
+            with open(file_path, 'w', encoding='utf-8') as file:
+                yaml.safe_dump(data, file, allow_unicode=True, sort_keys=False)
 
 
     def dump_with_comments(self, commented_yaml_data, file_path):
@@ -56,8 +62,9 @@ class YamlUtil:
         :param file_path:
         :return:
         """
-        with open(file_path, 'w', encoding='utf-8') as file:
-            self._write_yaml.dump(commented_yaml_data, file)
+        with self._lock:
+            with open(file_path, 'w', encoding='utf-8') as file:
+                self._write_yaml.dump(commented_yaml_data, file)
 
 
     def add_comments_before(self, data, comments_dict):
