@@ -245,16 +245,16 @@ class ChromeSingleTabRequest(RequestThread):
         """
         LogUtil().debug(self.task_name, f'[BrowserRunner] 网页 {self.url} 开始加载')
 
-        # 设置超时策略, 如果没有超时默认阻塞加载到结束
-        if self.timeout is not None and self.timeout > 0:
-            self.web_driver.set_script_timeout(self.timeout)
+        # # 设置超时策略, 如果没有超时默认阻塞加载到结束
+        # if self.timeout is not None and self.timeout > 0:
+        #     self.web_driver.set_script_timeout(self.timeout)
 
         try:
             self.web_driver.get(self.url)
 
-            # 临时改一下这边的逻辑，超时时间改成等待时间，满足延时需求
-            # if self.timeout is not None and self.timeout > 0:
-            #     sleep(self.timeout)
+            # todo: 临时改一下这边的逻辑，超时时间改成等待时间，满足延时需求
+            if self.timeout is not None and self.timeout > 0:
+                sleep(self.timeout)
 
             if self.wait_element_id is not None:
                 WebDriverWait(self.web_driver, self.timeout).until(
