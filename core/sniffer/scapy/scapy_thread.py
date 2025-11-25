@@ -38,9 +38,6 @@ class ScapyThread(BetterThread):
         # 网卡
         self.network_interface = self._detect_interface(network_interface)
 
-        # 抓包结果
-        self.packets = None     # 抓取的包列表
-
 
     def _detect_interface(self,network_interface):
         """自动检测网络接口"""
@@ -70,27 +67,49 @@ class ScapyThread(BetterThread):
             LogUtil().error(self.task_name, "需要root权限执行抓包，请使用sudo运行脚本")
             exit(1)
 
-
     def _capture(self):
-        """
-        抓取流量的核心方法
-        :return:
-        """
         LogUtil().debug(self.task_name, f'[ScapyProcess] 开启 sniff')
-        LogUtil().debug(self.task_name, f'[ScapyProcess] 网卡: {self.network_interface}')
-        LogUtil().debug(self.task_name, f'[ScapyProcess] pcap文件: {self.output_file}')
+        q = Queue(maxsize=20000)
+        writer = PcapWriter(self.output_file, append=True, sync=True)
 
-        # 使用sniff抓包，并设置stop_filter以便及时检查stop_event
+        def feeder(pkt):
+            # sniff 线程里：只把 pkt 放进队列，不做重 IO
+            if self.stop_event.is_set():
+                return
+            try:
+                q.put(pkt, block=False)
+            except:
+                # 队列满了可以丢包或计数
+                pass
+
+        def writer_thread():
+            while not self.stop_event.is_set() or not q.empty():
+                try:
+                    pkt = q.get(timeout=1)
+                except:
+                    continue
+                writer.write(pkt)
+                q.task_done()
+
+        wt = threading.Thread(target=writer_thread, daemon=True)
+        wt.start()
+
         try:
-            sniff(
-                filter=self.filter_expr,
-                iface=self.network_interface,
-                prn=lambda pkt: wrpcap(self.output_file, pkt, append=True),
-                stop_filter=lambda pkt: self.stop_event.is_set()
-            )
+            while not self.stop_event.is_set():
+                sniff(
+                    filter=self.filter_expr,
+                    iface=self.network_interface,
+                    store=False,
+                    prn=feeder,
+                    timeout=1,  # ★ 抓包线程一秒轮询一次 stop_event
+                )
         except Exception as e:
             LogUtil().error(self.task_name, f'[ScapyProcess] 抓包出现异常: {e}')
         finally:
+            self.stop_event.set()
+            wt.join(timeout=5)
+            LogUtil().debug(self.task_name, f'[ScapyProcess] sniff 结束')
+
             LogUtil().debug(self.task_name, f'[ScapyProcess] sniff 结束')
 
 

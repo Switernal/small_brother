@@ -20,6 +20,7 @@ class OuterSubProcessHelper:
     """
 
     def __init__(self,
+                 logger_name: str,
                  name: str,
                  start_command,
                  enable_log: bool=False,
@@ -27,11 +28,13 @@ class OuterSubProcessHelper:
                  ):
         """
         初始化
+        :param logger_name:     日志记录器名称
         :param name:            进程名
         :param start_command:   启动命令
         :param enable_log:      是否启用日志
         :param log_file_path:   日志文件路径
         """
+        self.logger_name = logger_name if logger_name is not None else 'main'        # 日志记录器名称
         self.name = name                      # 自定义的进程名
         self.enable_log = enable_log          # 是否启用日志
         self.log_file_path = log_file_path    # 日志目录(如果不启用, 这一项可以为None)
@@ -55,7 +58,7 @@ class OuterSubProcessHelper:
         try:
             result = subprocess.run(cmd, shell=True, text=True, capture_output=True)
         except Exception as e:
-            LogUtil().error('main', f'[ProcessHelper.quick_execute_cmd()] 执行命令 {cmd} 失败, 原因: {e}')
+            LogUtil().error(self.logger_name, f'[ProcessHelper.quick_execute_cmd()] 执行命令 {cmd} 失败, 原因: {e}')
         finally:
             if result is not None:
                 return result.returncode == 0
@@ -109,7 +112,7 @@ class OuterSubProcessHelper:
         :param
         :return:
         """
-        LogUtil().debug('main', f"[Process(name: {self.name}).open()] 启动中...")
+        LogUtil().debug(self.logger_name, f"[OuterSubProcessHelper(name: {self.name}).open()] 启动中...")
         # 标准输出需要看是否启用日志
         std_out = None
         if self.enable_log is True:
@@ -127,7 +130,7 @@ class OuterSubProcessHelper:
             stderr=subprocess.STDOUT,  # 将标准错误重定向到标准输出
             text=True,  # 以文本模式处理输出
         )
-        LogUtil().debug('main', f"[Process(name: {self.name}).open()] 已启动, PID: {self.pid}")
+        LogUtil().debug(self.logger_name, f"[OuterSubProcessHelper(name: {self.name}).open()] 已启动, PID: {self.pid}")
         pass
 
 
@@ -142,25 +145,25 @@ class OuterSubProcessHelper:
                 # 关闭日志
                 self._close_log_file()
                 # 终止进程
-                LogUtil().debug('main', f"[Process(name: {self.name})._kill()] 正在尝试终止进程")
+                LogUtil().debug(self.logger_name, f"[OuterSubProcessHelper(name: {self.name})._kill()] 正在尝试终止进程")
                 self.__process.terminate()
                 self.__process.wait()       # todo: 不确定这个要不要加
                 return True
             except Exception as e:
-                LogUtil().error('main', f"[Process(name: {self.name})._kill()] 终止时发生异常: {e}")
+                LogUtil().error(self.logger_name, f"[OuterSubProcessHelper(name: {self.name})._kill()] 终止时发生异常: {e}")
                 return False
         else:
-            LogUtil().warning('main', f"[Process(name: {self.name})._kill()] 进程不处于存活状态, 无需终止")
+            LogUtil().warning(self.logger_name, f"[OuterSubProcessHelper(name: {self.name})._kill()] 进程不处于存活状态, 无需终止")
             return True
         pass
 
 
     def stop_process(self):
-        LogUtil().debug('main', f'[Process.start()] 进程 {self.name} 正在准备停止')
+        LogUtil().debug(self.logger_name, f'[OuterSubProcessHelper.start()] 进程 {self.name} 正在准备停止')
         self._terminate_process()
         # 如果启用了日志, 就处理一下
         if self.enable_log is True:
-            LogUtil().debug('main', f'[Process.start()] 进程 {self.name} 处理日志')
+            LogUtil().debug(self.logger_name, f'[OuterSubProcessHelper.start()] 进程 {self.name} 处理日志')
             self.handle_log()
 
 
