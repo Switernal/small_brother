@@ -20,9 +20,9 @@ class OuterSubProcessHelper:
     """
 
     def __init__(self,
-                 logger_name: str,
                  name: str,
                  start_command,
+                 logger_name: str='main',
                  enable_log: bool=False,
                  log_file_path: str = None,
                  ):
@@ -34,7 +34,7 @@ class OuterSubProcessHelper:
         :param enable_log:      是否启用日志
         :param log_file_path:   日志文件路径
         """
-        self.logger_name = logger_name if logger_name is not None else 'main'        # 日志记录器名称
+        self.logger_name = logger_name        # 日志记录器名称
         self.name = name                      # 自定义的进程名
         self.enable_log = enable_log          # 是否启用日志
         self.log_file_path = log_file_path    # 日志目录(如果不启用, 这一项可以为None)

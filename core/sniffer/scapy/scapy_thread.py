@@ -68,7 +68,14 @@ class ScapyThread(BetterThread):
             exit(1)
 
     def _capture(self):
+        """
+                抓取流量的核心方法
+                :return:
+                """
         LogUtil().debug(self.task_name, f'[ScapyProcess] 开启 sniff')
+        LogUtil().debug(self.task_name, f'[ScapyProcess] 网卡: {self.network_interface}')
+        LogUtil().debug(self.task_name, f'[ScapyProcess] pcap文件: {self.output_file}')
+
         q = Queue(maxsize=20000)
         writer = PcapWriter(self.output_file, append=True, sync=True)
 
@@ -108,8 +115,6 @@ class ScapyThread(BetterThread):
         finally:
             self.stop_event.set()
             wt.join(timeout=5)
-            LogUtil().debug(self.task_name, f'[ScapyProcess] sniff 结束')
-
             LogUtil().debug(self.task_name, f'[ScapyProcess] sniff 结束')
 
 
