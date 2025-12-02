@@ -21,7 +21,7 @@ class TcpdumpSniffer(TrafficSniffer):
         :param task_name:           任务名称
         :param output_file_path:    输出文件路径
         :param network_interface:   网络接口
-        :param filter_expr:         过滤表达式
+        :param params:              指令参数
         """
 
         # 1. 初始化父类
@@ -82,7 +82,7 @@ class TcpdumpSniffer(TrafficSniffer):
         """
         self.startup_instruction = [
             self.tcpdump_cmd,
-            '-i', str(self.network_interface_id),
+            '-i', self.network_interface,
             '-w', self.output_file_path,
             '-f', self.filter_expr
         ]
