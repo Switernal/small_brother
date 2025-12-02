@@ -53,7 +53,7 @@ def __capture_once_directly():
         output_main_dir=output_main_dir,
         extension_config=extension_config,
         request_config=request_config,
-        sniffer_scapy_config=sniffer_scapy_config,
+        sniffer_config=sniffer_scapy_config,
         # sniffer_conn_tracker_config=sniffer_conn_tracker_config
     )
     # 10. 启动线程
@@ -115,7 +115,7 @@ def __capture_once_by_proxy():
         output_main_dir=output_main_dir,
         extension_config=extension_config,
         request_config=request_config,
-        sniffer_scapy_config=sniffer_scapy_config,
+        sniffer_config=sniffer_scapy_config,
         # sniffer_conn_tracker_config=sniffer_conn_tracker_config
     )
     # 10. 启动线程

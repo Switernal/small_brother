@@ -1,3 +1,3 @@
 from . import connection
 
-from . import scapy
+from .impl import scapy

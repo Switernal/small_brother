@@ -10,7 +10,7 @@ from core.extension.interface.extension import Extension
 from core.filter.connections_filter import ConnectionsFilter
 from core.request.interface.request_thread import RequestThread
 from core.sniffer.connection.connection_tracker_thread import ConnectionTrackerThread
-from core.sniffer.scapy.scapy_thread import ScapyThread
+from core.sniffer.interface.traffic_sniffer import TrafficSniffer
 from core.util.io.log_util import LogUtil
 from core.util.io.path_util import PathUtil
 from core.util.network.network_interface_util import NetworkInterfaceUtil
@@ -33,7 +33,7 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
                  output_main_dir: str,
                  extension_config:dict=None,
                  request_config: dict=None,
-                 sniffer_scapy_config: dict=None,
+                 sniffer_config: dict=None,
                  sniffer_conn_tracker_config: dict=None
                  ):
         """
@@ -44,7 +44,7 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
         :param output_main_dir:                 输出主目录
         :param extension_config:                扩展配置
         :param request_config:                  请求配置
-        :param sniffer_scapy_config:            scapy配置
+        :param sniffer_config:                  流量嗅探器配置
         :param sniffer_conn_tracker_config:     ConnectionTracker配置
         """
 
@@ -55,7 +55,7 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
             timeout=timeout,
             extension_config=extension_config,
             request_config=request_config,
-            sniffer_scapy_config=sniffer_scapy_config,
+            sniffer_config=sniffer_config,
             sniffer_conn_tracker_config=sniffer_conn_tracker_config
         )
 
@@ -73,7 +73,7 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
         # 进程实例
         self.extension = None                       # 扩展(一般是外部进程, 也可能是线程)
         self.request_thread = None                  # 请求线程
-        self.sniffer_scapy_thread = None            # scapy线程
+        self.sniffer: TrafficSniffer = None         # 流量嗅探器
         self.sniffer_conn_tracker_thread = None     # ConnectionTracker线程
 
         # 进程传递出来信息
@@ -215,55 +215,55 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
 
     def __create_and_start_sniffer(self):
         """
-        创建并启动流量嗅探模块(包括Scapy和ConnectionTracker)
+        创建并启动流量嗅探模块(包括TrafficSniffer和ConnectionTracker)
 
         流程:
             1. 设置pcap路径
-            2. 创建scapy线程, 但需要检查是否传入sniffer_scapy_config, 如果传入了应该特别处理
-            3. 启动scapy线程
+            2. 创建TrafficSniffer, 但需要检查是否传入sniffer_config, 如果传入了应该特别处理
+            3. 启动TrafficSniffer
             4. 创建ConnectionTracker线程, 但需要检查是否传入sniffer_conn_tracker_config, 如果传入了应该特别处理
             5. 启动ConnectionTracker线程
         :return:
         """
-        LogUtil().debug(self.task_name, f"[WebsiteCaptureThread] 正在启动 Sniffer 模块 (Scapy)")
+        LogUtil().debug(self.task_name, f"[WebsiteCaptureThread] 正在启动 Sniffer 模块")
 
         # 1. 设置pcap路径
         self.__pcap_path = PathUtil.file_path_join(
             self.output_main_dir,
             file_path=f'{self.url_for_dir}_{self.__create_time_str}.pcap'
         )
-        # 2. 创建scapy线程, 但需要检查是否传入scapy_config, 如果传入了应该特别处理
+        # 2. 创建TrafficSniffer, 但需要检查是否传入 sniffer_config, 如果传入了应该特别处理
 
         # 2.1 如果没有Config,先创建一个
-        if self.sniffer_scapy_config is None:
-            self.sniffer_scapy_config = {}
+        if self.sniffer_config is None:
+            self.sniffer_config = {}
 
-        # 2.2 如果是代理且没有指定表达式, 需要把远程地址和端口生成一个过滤表达式传入scapy
-        if self.__is_extension_proxy() and self.sniffer_scapy_config.get('filter_expr') is None:
-            # 主动创建一个但是没有传入scapy_config
+        # 2.2 如果是代理且没有指定表达式, 需要把远程地址和端口生成一个过滤表达式传入TrafficSniffer
+        if self.__is_extension_proxy() and self.sniffer_config.get('filter_expr') is None:
+            # 主动创建一个但是没有传入 sniffer_config
             remote_addr = self.extension_info.get('protocol_stack').remote_address
             remote_port = self.extension_info.get('protocol_stack').remote_port
             filter_expr = f"host {remote_addr} and port {remote_port}"
-            self.sniffer_scapy_config.update({'filter_expr': filter_expr})
+            self.sniffer_config.update({'filter_expr': filter_expr})
 
         # 2.3 如果配置中没有指定保存目录, 就把生成的pcap目录设置进去
-        self.sniffer_scapy_config.update({'output_file_path': self.__pcap_path})
+        self.sniffer_config.update({'output_file_path': self.__pcap_path})
 
         # 2.4 指定网卡
-        if self.sniffer_scapy_config.get('network_interface') is None:
+        if self.sniffer_config.get('network_interface') is None:
             # 如果没指定, 先尝试用网卡util获取一下活跃的物理网卡
             active_physical_interface = NetworkInterfaceUtil().get_active_physical_interface()
-            self.sniffer_scapy_config.update({'network_interface': active_physical_interface})
+            self.sniffer_config.update({'network_interface': active_physical_interface})
 
         # 2.3 根据 sniffer_config 创建
-        self.sniffer_scapy_thread = ScapyThread.create_scapy_thread_by_config(task_name=self.task_name,
-                                                                              config=self.sniffer_scapy_config)
+        self.sniffer = TrafficSniffer.creat_sniffer_by_config(task_name=self.task_name,
+                                                              config=self.sniffer_config)
         # end if
 
-        # 3. 启动scapy线程
-        self.sniffer_scapy_thread.start()
+        # 3. 启动 TrafficSniffer 线程
+        self.sniffer.start_sniffer()
 
-        LogUtil().debug(self.task_name, f"[WebsiteCaptureThread] 正在启动 Sniffer 模块 (ConnectionTracker)")
+        LogUtil().debug(self.task_name, f"[WebsiteCaptureThread] 正在启动 TrafficSniffer 模块 (ConnectionTracker)")
 
         # 4. 检查是否传入conn_tracker_config
         if self.sniffer_conn_tracker_config is None:
@@ -326,9 +326,9 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
         """
         LogUtil().debug(self.task_name, f"[WebsiteCaptureThread] 正在停止 Sniffer 模块")
 
-        # 1. 停止scapy线程
-        if self.sniffer_scapy_thread is not None:
-            self.sniffer_scapy_thread.stop()
+        # 1. 停止 TrafficSniffer 线程
+        if self.sniffer is not None:
+            self.sniffer.stop_sniffer()
         # 2. 停止ConnectionTracker线程
         if self.sniffer_conn_tracker_thread is not None:
             self.sniffer_conn_tracker_thread.stop()
@@ -349,11 +349,11 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
 
         LogUtil().debug(self.task_name, f"[WebsiteCaptureThread] 正在过滤 pcap 文件")
 
-        # scapy 嗅探信息(pcap路径和connection列表)
-        pcap_path = self.sniffer_scapy_thread.output_file
+        # 流量嗅探信息(pcap路径和connection列表)
+        pcap_path = self.sniffer.get_pcap_path()
         conns = self.sniffer_conn_tracker_thread.get_connections_list()  # 只取Connection对象列表, 不要原dict
 
-        # 根据 scapy 抓的包与连接列表, 过滤pcap文件
+        # 根据 TrafficSniffer 抓的包与连接列表, 过滤pcap文件
         ConnectionsFilter.filter_pcap(pcap_path=pcap_path, connections_list=conns)
         pass
 

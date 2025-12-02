@@ -67,6 +67,7 @@ class ScapyThread(BetterThread):
             LogUtil().error(self.task_name, "需要root权限执行抓包，请使用sudo运行脚本")
             exit(1)
 
+
     def _capture(self):
         """
                 抓取流量的核心方法

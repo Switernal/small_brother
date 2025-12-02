@@ -219,7 +219,7 @@ class WebsiteSingleTabTaskThread(TaskThread):
                         output_main_dir=self.task_config.output_dir,
                         extension_config=extension_config_dict,
                         request_config=request_config_dict,
-                        sniffer_scapy_config=sniffer_scapy_config,
+                        sniffer_config=sniffer_scapy_config,
                         sniffer_conn_tracker_config=sniffer_conn_tracker_config
                     )
                     LogUtil().debug(self.task_config.task_name, f'[WebsiteSingleTabTaskThread] 启动抓取流程')
