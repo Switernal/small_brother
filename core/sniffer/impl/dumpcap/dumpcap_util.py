@@ -97,12 +97,10 @@ class DumpcapUtil:
     @staticmethod
     def _find_interface_index_by_name(target_name, interfaces_lines):
         """
-        根据接口名称（或其子串）找到对应的接口编号。
-        dumpcap -D 输出通常类似：
-            1. Ethernet
-            2. 以太网 2
-            3. \Device\NPF_{GUID} (以太网 2)
-        只要行里包含 target_name 就认为匹配。
+        从 dumpcap -D 输出的接口列表中查找名称包含 target_name 的接口，返回其索引。
+        :param target_name: 目标网卡名称的一部分
+        :param interfaces_lines: dumpcap -D 输出的接口列表行
+        :return: 接口索引
         """
         for line in interfaces_lines:
             m = re.match(r"\s*(\d+)\.\s*(.*)", line)

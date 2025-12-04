@@ -20,7 +20,7 @@ pyOpenSSL==25.0.0
 PyYAML==6.0.2
 railroad==0.5.0
 ruamel.base==1.0.0
-selenium==4.24.0
+selenium==4.36.0
 Sphinx==8.2.3
 thread==2.0.5
 tornado==6.4.2

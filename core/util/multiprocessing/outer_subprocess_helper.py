@@ -2,6 +2,8 @@ __doc__='外部子进程类'
 __auther__='Li Qingyun'
 __date__='2025-03-01'
 
+import signal
+
 from core.util.io.log_util import LogUtil
 
 """
@@ -38,7 +40,7 @@ class OuterSubProcessHelper:
         self.name = name                      # 自定义的进程名
         self.enable_log = enable_log          # 是否启用日志
         self.log_file_path = log_file_path    # 日志目录(如果不启用, 这一项可以为None)
-        self.__start_command = start_command  # 启动命令
+        self.__start_command:list = start_command  # 启动命令
         self.__log_file = None                # 日志文件对象
         self.__process = None                 # 进程
         self.__status = None                  # 进程状态
@@ -58,7 +60,7 @@ class OuterSubProcessHelper:
         try:
             result = subprocess.run(cmd, shell=True, text=True, capture_output=True)
         except Exception as e:
-            LogUtil().error(self.logger_name, f'[ProcessHelper.quick_execute_cmd()] 执行命令 {cmd} 失败, 原因: {e}')
+            LogUtil().error('main', f'[ProcessHelper.quick_execute_cmd()] 执行命令 {cmd} 失败, 原因: {e}')
         finally:
             if result is not None:
                 return result.returncode == 0
@@ -146,8 +148,13 @@ class OuterSubProcessHelper:
                 self._close_log_file()
                 # 终止进程
                 LogUtil().debug(self.logger_name, f"[OuterSubProcessHelper(name: {self.name})._kill()] 正在尝试终止进程")
-                self.__process.terminate()
-                self.__process.wait()       # todo: 不确定这个要不要加
+                # self.__process.terminate() # terminate 会直接中断, 可能会导致程序数据写入丢失
+                # self.__process.wait()       # todo: 不确定这个要不要加
+                # 发送停止信号, 模拟Ctrl-C退出
+                self.__process.send_signal(signal.SIGINT)
+                # 获取终止后的输出
+                output_message = self.__process.communicate()[0]
+                LogUtil().info(self.logger_name, f"[OuterSubProcessHelper(name: {self.name})._kill()] 进程终止后的输出: {output_message}")
                 return True
             except Exception as e:
                 LogUtil().error(self.logger_name, f"[OuterSubProcessHelper(name: {self.name})._kill()] 终止时发生异常: {e}")

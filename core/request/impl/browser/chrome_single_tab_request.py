@@ -11,7 +11,9 @@ import psutil
 from psutil import AccessDenied, NoSuchProcess
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
+from webdriver_manager.chrome import ChromeDriverManager
 
 from core.request.const.request_type import RequestType
 from core.request.interface.request_thread import RequestThread
@@ -221,7 +223,25 @@ class ChromeSingleTabRequest(RequestThread):
         # 设置浏览器代理Option
         self.__setup_proxy_option()
 
-        self.web_driver = webdriver.Chrome(options=self.options)
+        try:
+            # 强制安装适配当前系统的驱动
+            # 这会自动区分 mac-arm64 (M芯片) 和 mac-x64
+            driver_path = ChromeDriverManager().install()
+
+            service = Service(driver_path)
+
+            # 关键调试：打印一下它到底下载了哪个版本，方便排查
+            # print(f"Loading ChromeDriver from: {driver_path}")
+
+            # 重新初始化
+            self.web_driver = webdriver.Chrome(service=service, options=self.options)
+
+        except Exception as e:
+            print("启动失败，请检查下方报错与路径")
+            # 如果依然报错，这个 print 能救命
+            import traceback
+            traceback.print_exc()
+            raise e
 
         # 反爬虫 JS
         self.web_driver.execute_cdp_cmd(

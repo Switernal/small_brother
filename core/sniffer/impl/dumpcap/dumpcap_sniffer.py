@@ -60,36 +60,15 @@ class DumpcapSniffer(TrafficSniffer):
         pass
 
 
-    def generate_filter_expr_by_params(self):
-        """
-        生成过滤表达式
-        """
-        self.filter_expr = ''
-        # host 主机
-        if self.params.get('host') is not None:
-            host = self.params.get('host')
-            if self.filter_expr != '':
-                self.filter_expr += ' and '
-            self.filter_expr += f'host {host}'
-
-        # port 端口号
-        if self.params.get('port') is not None:
-            port = self.params.get('port')
-            if self.filter_expr != '':
-                self.filter_expr += ' and '
-            self.filter_expr += f'port {port}'
-
-        pass
-
     def generate_startup_instruction(self):
         """
         生成启动指令
         """
-        self.startup_instruction = [
-            self.dumpcap_cmd,
-            '-i', str(self.network_interface_id),
-            '-w', self.output_file_path,
-            '-f', self.filter_expr
+        self.startup_instruction = self.dumpcap_cmd + [
+            '-i', str(self.network_interface_id),   # 网络接口ID
+            '-w', self.output_file_path,            # 输出文件路径
+            '-b', '50',                             # 缓冲区大小, 单位'MB'
+            '-f', self.filter_expr                  # 过滤表达式
         ]
         pass
 

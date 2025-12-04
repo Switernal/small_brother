@@ -8,7 +8,7 @@ from core.util.multiprocessing import OuterSubProcessHelper
 
 class TcpdumpSniffer(TrafficSniffer):
     """
-    tcpdump 子进程工具类
+    tcpdump 子进程工具类手机号
     """
     def __init__(self,
                  task_name: str,
@@ -54,37 +54,16 @@ class TcpdumpSniffer(TrafficSniffer):
         )
         pass
 
-
-    def generate_filter_expr_by_params(self):
-        """
-        生成过滤表达式
-        """
-        self.filter_expr = ''
-        # host 主机
-        if self.params.get('host') is not None:
-            host = self.params.get('host')
-            if self.filter_expr != '':
-                self.filter_expr += ' and '
-            self.filter_expr += f'host {host}'
-
-        # port 端口号
-        if self.params.get('port') is not None:
-            port = self.params.get('port')
-            if self.filter_expr != '':
-                self.filter_expr += ' and '
-            self.filter_expr += f'port {port}'
-
-        pass
-
     def generate_startup_instruction(self):
         """
         生成启动指令
         """
-        self.startup_instruction = [
-            self.tcpdump_cmd,
-            '-i', self.network_interface,
-            '-w', self.output_file_path,
-            '-f', self.filter_expr
+        self.startup_instruction = self.tcpdump_cmd + [
+            '-i', self.network_interface,     # 网络接口
+            '-w', self.output_file_path,      # 输出文件路径
+            '-f', self.filter_expr,           # 过滤表达式
+            # '-n',                           # 不进行DNS解析
+            '-B', '51200',                    # 缓冲区大小, 单位KB
         ]
         pass
 

@@ -239,12 +239,17 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
             self.sniffer_config = {}
 
         # 2.2 如果是代理且没有指定表达式, 需要把远程地址和端口生成一个过滤表达式传入TrafficSniffer
-        if self.__is_extension_proxy() and self.sniffer_config.get('filter_expr') is None:
+        if self.__is_extension_proxy() and self.sniffer_config.get('params') is None:
             # 主动创建一个但是没有传入 sniffer_config
+            params = {}
             remote_addr = self.extension_info.get('protocol_stack').remote_address
             remote_port = self.extension_info.get('protocol_stack').remote_port
-            filter_expr = f"host {remote_addr} and port {remote_port}"
-            self.sniffer_config.update({'filter_expr': filter_expr})
+            params['host'] = remote_addr
+            params['port'] = remote_port
+            params['tcp']  = True
+            params['upd']  = False
+            params['icmp'] = False
+            self.sniffer_config.update({'params': params})
 
         # 2.3 如果配置中没有指定保存目录, 就把生成的pcap目录设置进去
         self.sniffer_config.update({'output_file_path': self.__pcap_path})

@@ -5,9 +5,6 @@ __date__ = "2025-12-03"
 import platform
 from abc import ABCMeta, abstractmethod
 
-from core.sniffer.impl.dumpcap.dumpcap_sniffer import DumpcapSniffer
-from core.sniffer.impl.scapy.scapy_sniffer import ScapySniffer
-from core.sniffer.impl.tcpdump.tcpdump_sniffer import TcpdumpSniffer
 from core.util.network.network_interface_util import NetworkInterfaceUtil
 
 
@@ -76,18 +73,50 @@ class TrafficSniffer(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def generate_filter_expr_by_params(self):
-        """
-        使用参数列表生成过滤表达式
-        """
-        pass
-
-    @abstractmethod
     def generate_startup_instruction(self):
         """
         生成启动指令
         """
         pass
+
+    def generate_filter_expr_by_params(self):
+        """
+        生成过滤表达式
+        """
+        self.filter_expr = ''
+        # host 主机
+        if self.params.get('host') is not None:
+            host = self.params.get('host')
+            if self.filter_expr != '':
+                self.filter_expr += ' and '
+            self.filter_expr += f'host {host}'
+
+        # port 端口号
+        if self.params.get('port') is not None:
+            port = self.params.get('port')
+            if self.filter_expr != '':
+                self.filter_expr += ' and '
+            self.filter_expr += f'port {port}'
+
+        if self.params.get('tcp') is not None:
+            if self.params.get('tcp') is True:
+                if self.filter_expr != '':
+                    self.filter_expr += ' and '
+                self.filter_expr += 'tcp'
+
+        if self.params.get('udp') is not None:
+            if self.params.get('udp') is True:
+                if self.filter_expr != '':
+                    self.filter_expr += ' and '
+                self.filter_expr += 'udp'
+
+        if self.params.get('icmp') is not None:
+            if self.params.get('icmp') is True:
+                if self.filter_expr != '':
+                    self.filter_expr += ' and '
+                self.filter_expr += 'icmp'
+        pass
+
 
     def get_pcap_path(self):
         """
@@ -96,9 +125,14 @@ class TrafficSniffer(metaclass=ABCMeta):
         return self.output_file
 
 
+
     @staticmethod
     @abstractmethod
     def creat_sniffer_by_config(task_name, config: dict):
+        from core.sniffer.impl.dumpcap.dumpcap_sniffer import DumpcapSniffer
+        from core.sniffer.impl.tcpdump.tcpdump_sniffer import TcpdumpSniffer
+        from core.sniffer.impl.scapy.scapy_sniffer import ScapySniffer
+
         """
         根据配置创建抓包器实例
         :param task_name: 任务名称

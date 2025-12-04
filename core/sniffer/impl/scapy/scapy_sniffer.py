@@ -2,7 +2,7 @@ __doc__ = "scapy 嗅探器"
 __author__ = "Li Qingyun"
 __date__ = "2025-12-03"
 
-from core.sniffer.impl.scapy import ScapyThread
+from core.sniffer.impl.scapy.scapy_thread import ScapyThread
 from core.sniffer.interface.traffic_sniffer import TrafficSniffer
 
 
@@ -10,6 +10,13 @@ class ScapySniffer(TrafficSniffer):
     """
     scapy 嗅探器
     """
+
+    def generate_filter_expr_by_params(self):
+        pass
+
+    def generate_startup_instruction(self):
+        pass
+
     def __init__(self,
                  task_name: str,
                  output_file_path: str,
@@ -37,9 +44,14 @@ class ScapySniffer(TrafficSniffer):
             params=params
         )
 
+
         # 2. 创建scapy线程
         self.scapy_thread = ScapyThread.create_scapy_thread_by_config(task_name=self.task_name,
-                                                                              config=self.sniffer_scapy_config)
+                                                                      config={
+                                                                                'output_file_path': self.output_file,
+                                                                                'network_interface': self.network_interface,
+                                                                                'filter_expr': self.filter_expr,
+                                                                             })
         pass
 
 
