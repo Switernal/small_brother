@@ -108,104 +108,72 @@ class ChromeSingleTabRequest(RequestThread):
         if self.use_proxy is True and self.proxy_port is not None:
             self.options.add_argument(f"--proxy-server=http://127.0.0.1:{self.proxy_port}")
 
-
     def __find_chrome_network_service_pid(self):
         """
         通过 Selenium 的 Chrome WebDriver 实例查找 Network Service 进程的 PID
-        :return: Network Service 进程的 PID（若未找到返回 None）
+        优化版：不再遍历全系统进程，直接利用父子进程关系查找
         """
-        # 获取 WebDriver 进程 PID（通常是 chromedriver）
-        chromedriver_pid = self.web_driver.service.process.pid
+        self.network_service_pid = None
 
-        # 查找 chromedriver 的子进程（即 Chrome 主进程）
-        chrome_main_pid = None
-
-        # Chrome进程名, Windows为'chrome.exe', Linux为'google-chrome', Mac为'Google Chrome'
-        chrome_process_name = 'Google Chrome'
-
-        if platform.system() == 'Windows':
-            chrome_process_name = 'chrome.exe'
-        elif platform.system() == "Linux":
-            chrome_process_name = 'google-chrome'
-        elif platform.system() == "Darwin":
-            chrome_process_name = 'Google Chrome'
-
-        # 尝试获取chrome进程名, Windows下有时会发生 Access Denied, 需要异常处理
+        # 1. 获取 chromedriver 进程对象
         try:
-            chrome_main_pid = self.__find_chrome_main_pid(chromedriver_pid, chrome_process_name)
-        except Exception as e:
-            LogUtil().debug(self.task_name, f"[BrowserRunner] 查找 Chrome 主进程时出错: {e}")
+            chromedriver_pid = self.web_driver.service.process.pid
+            driver_process = psutil.Process(chromedriver_pid)
+        except psutil.NoSuchProcess:
+            LogUtil().debug(self.task_name, "[BrowserRunner] Chromedriver 进程已不存在")
+            return None
 
-        if chrome_main_pid:
-            LogUtil().debug(self.task_name, f"[BrowserRunner] 找到 Chrome 主进程ID: {chrome_main_pid}")
-        else:
-            LogUtil().debug(self.task_name, "[BrowserRunner] 未能找到 Chrome 主进程")
+        # 2. 查找 Chrome 主进程 (Chromedriver 的直接子进程)
+        chrome_main_proc = None
 
-        # 递归查找 Chrome 主进程的所有子进程
-        def find_children(pid):
-            children = []
-            for _proc in psutil.process_iter(['pid', 'ppid', 'cmdline']):
-                if _proc.ppid() == pid:
-                    children.append(_proc)
-                    children.extend(find_children(_proc.pid))
-            return children
-
-        all_children = find_children(chrome_main_pid)
-
-        # 筛选 Network Service 进程
-        # 注: Chrome会把所有网络连接交给Network Service进程处理, 只需要抓这个进程即可
-        for proc in all_children:
+        # 重试机制：有时候 Chrome 启动稍慢，刚开始 driver 下面可能还没挂上子进程
+        for _ in range(5):
             try:
-                cmdline = ' '.join(proc.cmdline())
-                if '--utility-sub-type=network.mojom.NetworkService' in cmdline:
-                    self.network_service_pid = proc.pid
+                children = driver_process.children(recursive=False)  # 只找亲儿子
+                if children:
+                    # 通常 Chromedriver 只有一个子进程就是 Chrome 浏览器主进程
+                    chrome_main_proc = children[0]
                     break
-            except Exception as e:
-                # 单个进程访问被拒绝或进程已不存在，继续检查下一个进程
-                LogUtil().warning(self.task_name, f"[BrowserRunner] find_children 访问进程 {proc.pid} 信息被拒绝或进程不存在, 异常信息: {e}")
-                continue
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+            time.sleep(0.5)
 
-        LogUtil().warning(self.task_name,
-                          f"[BrowserRunner] Chrome Network Service 进程ID: {self.network_service_pid}")
+        if not chrome_main_proc:
+            LogUtil().debug(self.task_name, "[BrowserRunner] 未能找到 Chrome 主进程")
+            return None
+
+        LogUtil().debug(self.task_name, f"[BrowserRunner] 找到 Chrome 主进程ID: {chrome_main_proc.pid}")
+
+        # 3. 查找 Network Service 进程 (Chrome 主进程的后代)
+        try:
+            # 关键优化：recursive=True 一次性获取所有后代，不需要自己写递归，也不需要扫描全系统
+            all_descendants = chrome_main_proc.children(recursive=True)
+
+            target_flag = '--utility-sub-type=network.mojom.NetworkService'
+
+            for proc in all_descendants:
+                try:
+                    # 获取命令行参数 (cmdline返回的是list)
+                    cmdline = proc.cmdline()
+                    # 检查参数列表中是否包含目标 flag
+                    # 注意：cmdline 是 list，需要判断 element 是否包含字符串，或者 join 后判断
+                    if any(target_flag in arg for arg in cmdline):
+                        self.network_service_pid = proc.pid
+                        break
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+
+        except psutil.NoSuchProcess:
+            LogUtil().debug(self.task_name, "[BrowserRunner] Chrome 主进程在查找过程中消失")
+
+        if self.network_service_pid:
+            LogUtil().warning(self.task_name,
+                              f"[BrowserRunner] Chrome Network Service 进程ID: {self.network_service_pid}")
+        else:
+            LogUtil().warning(self.task_name, "[BrowserRunner] 未找到 Network Service 进程")
 
         return self.network_service_pid
 
-    def __find_chrome_main_pid(self, chromedriver_pid, chrome_process_name, max_retries=3, delay=0.5):
-        """
-        查找 Chrome 主进程 ID，带有重试机制
-        主要针对 Windows 平台偶尔出现 AccessDenied
-        """
-        for retry in range(max_retries):
-            try:
-                for proc in psutil.process_iter(['pid', 'ppid', 'name', 'cmdline']):
-                    try:
-                        # 检查进程的父ID和命令行
-                        if proc.ppid() == chromedriver_pid:
-                            cmdline = ' '.join(proc.cmdline())
-                            if chrome_process_name in cmdline:
-                                return proc.pid
-                    except (AccessDenied, NoSuchProcess):
-                        # 单个进程访问被拒绝或进程已不存在，继续检查下一个进程
-                        continue
-                # 如果遍历完所有进程都没有找到，返回None
-                return None
-
-            except AccessDenied:
-                # 处理process_iter()级别的访问拒绝
-                if retry < max_retries - 1:
-                    time.sleep(delay * (retry + 1))  # 指数退避
-                    continue
-                else:
-                    raise
-            except Exception as e:
-                # 其他未预期的异常
-                if retry < max_retries - 1:
-                    time.sleep(delay * (retry + 1))
-                    continue
-                else:
-                    raise
-
-        return None
 
     # ----- 浏览器操作 -----
     def _create_and_initial_web_driver(self):
@@ -238,7 +206,7 @@ class ChromeSingleTabRequest(RequestThread):
             # 重新初始化
             # self.web_driver = webdriver.Chrome(service=service, options=self.options)
 
-            self.web_driver = webdriver.Chrome( options=self.options)
+            self.web_driver = webdriver.Chrome(options=self.options)
 
         except Exception as e:
             print("启动失败，请检查下方报错与路径")
