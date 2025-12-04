@@ -165,6 +165,9 @@ class ChromeSingleTabRequest(RequestThread):
                 LogUtil().warning(self.task_name, f"[BrowserRunner] find_children 访问进程 {proc.pid} 信息被拒绝或进程不存在, 异常信息: {e}")
                 continue
 
+        LogUtil().warning(self.task_name,
+                          f"[BrowserRunner] Chrome Network Service 进程ID: {self.network_service_pid}")
+
         return self.network_service_pid
 
     def __find_chrome_main_pid(self, chromedriver_pid, chrome_process_name, max_retries=3, delay=0.5):
@@ -227,15 +230,15 @@ class ChromeSingleTabRequest(RequestThread):
         try:
             # 强制安装适配当前系统的驱动
             # 这会自动区分 mac-arm64 (M芯片) 和 mac-x64
-            driver_path = ChromeDriverManager().install()
-
-            service = Service(driver_path)
-
+            # driver_path = ChromeDriverManager().install()
+            #
+            # service = Service(driver_path)
             # 关键调试：打印一下它到底下载了哪个版本，方便排查
             # print(f"Loading ChromeDriver from: {driver_path}")
-
             # 重新初始化
-            self.web_driver = webdriver.Chrome(service=service, options=self.options)
+            # self.web_driver = webdriver.Chrome(service=service, options=self.options)
+
+            self.web_driver = webdriver.Chrome( options=self.options)
 
         except Exception as e:
             print("启动失败，请检查下方报错与路径")
