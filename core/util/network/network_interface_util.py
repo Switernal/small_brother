@@ -63,16 +63,17 @@ class NetworkInterfaceUtil:
             final_interface_name = candidates[0][0]
 
         # Windows 下,网卡名称需要转换一下, 通常是"以太网X" -> "Intel (R) Ethernet Connection ..."
-        if platform.system() == "Windows":
-            # 获取Windows接口列表
-            from scapy.arch import get_windows_if_list
-            interfaces = get_windows_if_list()
-            for iface in interfaces:
-                # iface['name'] = "以太网X"
-                # iface['description'] = "Intel (R) Ethernet Connection ..."
-                if iface['name'] == final_interface_name:
-                    final_interface_name = iface['description']
-                    break
+        # todo: scapy才需要, 现在改用dumpcap了, 还是用"以太网X", 这里先注释掉
+        # if platform.system() == "Windows":
+        #     # 获取Windows接口列表
+        #     from scapy.arch import get_windows_if_list
+        #     interfaces = get_windows_if_list()
+        #     for iface in interfaces:
+        #         # iface['name'] = "以太网X"
+        #         # iface['description'] = "Intel (R) Ethernet Connection ..."
+        #         if iface['name'] == final_interface_name:
+        #             final_interface_name = iface['description']
+        #             break
 
         return final_interface_name
 
