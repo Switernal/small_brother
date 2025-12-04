@@ -126,12 +126,19 @@ class OuterSubProcessHelper:
             std_out = subprocess.PIPE
 
         # 启动进程
-        self.__process = subprocess.Popen(
-            self.__start_command,      # 启动命令
-            stdout=std_out,            # 将标准输出重定向
-            stderr=subprocess.STDOUT,  # 将标准错误重定向到标准输出
-            text=True,  # 以文本模式处理输出
-        )
+        try:
+            self.__process = subprocess.Popen(
+                self.__start_command,       # 启动命令
+                stdout=std_out,             # 将标准输出重定向
+                stderr=subprocess.STDOUT,   # 将标准错误重定向到标准输出
+                text=True,                  # 以文本模式处理输出
+                encoding='utf-8',           # 强制使用 UTF-8 解码
+                errors='ignore'             # 【关键】遇到解不开的乱码直接忽略，不要抛出异常炸断程序
+            )
+        except Exception as e:
+            LogUtil().error(self.logger_name, f"[OuterSubProcessHelper(name: {self.name}).open()] 启动失败, 异常: {e}")
+            return
+
         LogUtil().debug(self.logger_name, f"[OuterSubProcessHelper(name: {self.name}).open()] 已启动, PID: {self.pid}")
         pass
 
@@ -155,7 +162,7 @@ class OuterSubProcessHelper:
                 # self.__process.wait()       # todo: 不确定这个要不要加
 
                 # 获取终止后的输出
-                output_message = self.__process.communicate()[0]
+                output_message = self._safe_communicate_and_decode()
                 LogUtil().info(self.logger_name, f"[OuterSubProcessHelper(name: {self.name})._kill()] 进程终止后的输出: {output_message}")
                 return True
             except Exception as e:
@@ -175,6 +182,40 @@ class OuterSubProcessHelper:
             LogUtil().debug(self.logger_name, f'[OuterSubProcessHelper.start()] 进程 {self.name} 处理日志')
             self.handle_log()
 
+    def _safe_communicate_and_decode(self):
+        """
+        安全地获取进程输出并解码
+        策略:
+        1. 获取原始 bytes
+        2. 尝试 utf-8 解码
+        3. 尝试 gbk (Windows默认) 解码
+        4. 实在不行，用 utf-8 强行解码并忽略错误字符
+        :return: 解码后的字符串
+        """
+        if not self.__process:
+            return ""
+
+        # 1. 获取原始二进制流 (前提是 Popen 没有设置 text=True)
+        # communicate 返回的是 (stdout_bytes, stderr_bytes)
+        stdout_bytes, _ = self.__process.communicate()
+
+        if not stdout_bytes:
+            return ""
+
+        # 2. 定义尝试顺序
+        encodings_to_try = ['utf-8', 'gbk', 'cp936']
+
+        for enc in encodings_to_try:
+            try:
+                # 尝试解码
+                return stdout_bytes.decode(encoding=enc)
+            except UnicodeDecodeError:
+                # 当前编码失败，尝试下一个
+                continue
+
+        # 3. 兜底方案：强制解码，忽略无法识别的乱码
+        # LogUtil().warning(self.logger_name, "标准解码失败，启用 ignore 模式强制解码")
+        return stdout_bytes.decode('utf-8', errors='ignore')
 
     @abstractmethod
     def handle_log(self):
