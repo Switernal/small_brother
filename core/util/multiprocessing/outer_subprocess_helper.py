@@ -148,10 +148,12 @@ class OuterSubProcessHelper:
                 self._close_log_file()
                 # 终止进程
                 LogUtil().debug(self.logger_name, f"[OuterSubProcessHelper(name: {self.name})._kill()] 正在尝试终止进程")
-                # self.__process.terminate() # terminate 会直接中断, 可能会导致程序数据写入丢失
-                # self.__process.wait()       # todo: 不确定这个要不要加
                 # 发送停止信号, 模拟Ctrl-C退出
-                self.__process.send_signal(signal.SIGINT)
+                # self.__process.send_signal(signal.SIGINT)
+
+                self.__process.terminate() # terminate 会直接中断, 可能会导致程序数据写入丢失
+                # self.__process.wait()       # todo: 不确定这个要不要加
+
                 # 获取终止后的输出
                 output_message = self.__process.communicate()[0]
                 LogUtil().info(self.logger_name, f"[OuterSubProcessHelper(name: {self.name})._kill()] 进程终止后的输出: {output_message}")

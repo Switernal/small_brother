@@ -67,7 +67,7 @@ class DumpcapSniffer(TrafficSniffer):
         self.startup_instruction = self.dumpcap_cmd + [
             '-i', str(self.network_interface_id),   # 网络接口ID
             '-w', self.output_file_path,            # 输出文件路径
-            '-b', '50',                             # 缓冲区大小, 单位'MB'
+            '-B', '50',                             # 缓冲区大小, 单位'MB'
             '-f', self.filter_expr                  # 过滤表达式
         ]
         pass

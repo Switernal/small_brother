@@ -6,7 +6,7 @@ import subprocess
 # 如果你知道 dumpcap 的绝对路径，可以直接写死在这里，例如：
 # DUMPCAP_PATH = r"C:\Program Files\Wireshark\dumpcap.exe"
 # 不写就自动用 PATH 里的 dumpcap
-DUMPCAP_PATH = None
+DUMPCAP_PATH = r"C:\Program Files\Wireshark\dumpcap.exe"
 
 
 class DumpcapUtil:
