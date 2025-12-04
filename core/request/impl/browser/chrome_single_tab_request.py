@@ -304,8 +304,14 @@ class ChromeSingleTabRequest(RequestThread):
             self.screenshot_name = f'screenshot_{url_for_dir}_{TimeUtil.now_time_str()}.png'
 
         screenshot_file_path = PathUtil.file_path_join(self.screenshot_dir, file_path=self.screenshot_name)
-        self.web_driver.save_screenshot(screenshot_file_path)
-        sleep(0.5)
+
+        try:
+            self.web_driver.save_screenshot(screenshot_file_path)
+            sleep(0.5)
+        except Exception as e:
+            LogUtil().warning(self.task_name, f'[BrowserRunner] 网页截图保存失败: {e}')
+            return
+
         LogUtil().debug(self.task_name, f'[BrowserRunner] 网页截图保存成功: {screenshot_file_path}')
 
 
