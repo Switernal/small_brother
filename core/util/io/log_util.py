@@ -79,7 +79,11 @@ class LogUtil:
 
             PathUtil.auto_create_path(f'{LogUtil().log_dir}')
 
-            file_handler = logging.FileHandler(f'{LogUtil().log_dir}/{logger_file_name}.log', mode="a")
+            file_handler = logging.FileHandler(
+                f'{LogUtil().log_dir}/{logger_file_name}.log',
+                mode="a",
+                encoding="utf-8"
+            )
             # 配置日志格式
             formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
             file_handler.setFormatter(formatter)
