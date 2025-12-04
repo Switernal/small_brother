@@ -314,14 +314,57 @@ class ChromeSingleTabRequest(RequestThread):
 
         LogUtil().debug(self.task_name, f'[BrowserRunner] 网页截图保存成功: {screenshot_file_path}')
 
-
     def _stop_web_driver(self):
         """
-        关闭浏览器实例
+        关闭浏览器实例（带强制查杀功能）
         """
-        LogUtil().debug(self.task_name, "[BrowserRunner] 关闭浏览器")
-        if self.web_driver:
-            self.web_driver.quit()
+        LogUtil().debug(self.task_name, "[BrowserRunner] 准备关闭浏览器")
+
+        # 1. 记录 PID，因为 quit() 之后 service.process 可能就访问不到了
+        driver_pid = None
+        if self.web_driver and self.web_driver.service and self.web_driver.service.process:
+            driver_pid = self.web_driver.service.process.pid
+
+        # 2. 尝试正常关闭
+        try:
+            if self.web_driver:
+                self.web_driver.quit()
+        except Exception as e:
+            LogUtil().debug(self.task_name, f"[BrowserRunner] driver.quit() 抛出异常 (可能是已经关闭了): {e}")
+
+        # 3. 【核心】物理超度：检查是否残留，如果有，强制 Kill 掉进程树
+        if driver_pid:
+            LogUtil().debug(self.task_name, f"[BrowserRunner] 有残留Chrome进程需要强制清理: pid={driver_pid}")
+            self.__force_kill_process_tree(driver_pid)
+
+    def __force_kill_process_tree(self, pid):
+        """
+        确保 Chromedriver 及其启动的所有 Chrome 子进程都被杀死
+        """
+        try:
+            parent = psutil.Process(pid)
+            # 获取所有子进程（包括孙子进程），recursive=True
+            children = parent.children(recursive=True)
+
+            # 先杀子进程
+            for child in children:
+                try:
+                    LogUtil().debug(self.task_name,
+                                    f"[BrowserRunner] 强制清理残留子进程 {child.name()} (PID: {child.pid})")
+                    child.kill()
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    pass
+
+            # 再杀父进程 (Chromedriver)
+            try:
+                LogUtil().debug(self.task_name, f"[BrowserRunner] 强制清理 Chromedriver (PID: {parent.pid})")
+                parent.kill()
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+
+        except psutil.NoSuchProcess:
+            # 进程已经不在了，说明 quit() 工作正常
+            pass
 
 
     def get_request_thread_info(self):
