@@ -10,6 +10,7 @@ import time
 import psutil
 from psutil import AccessDenied, NoSuchProcess
 from selenium import webdriver
+from selenium.common import TimeoutException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
@@ -254,6 +255,13 @@ class ChromeSingleTabRequest(RequestThread):
                     """
             },
         )
+
+        # 设置页面加载的硬性超时时间
+        # 即使 strategy 是 eager，有时候 DOM 也会卡住。
+        # 这里建议设置一个上限，比如 30秒，或者用你传入的 timeout (如果 timeout 比较大的话)
+        # 这里我写死 30秒作为兜底，防止无限卡死
+        self.web_driver.set_page_load_timeout(self.timeout)
+
         # 获取 Chrome Network Service 进程的 PID
         self.__find_chrome_network_service_pid()
 
@@ -265,21 +273,35 @@ class ChromeSingleTabRequest(RequestThread):
         """
         LogUtil().debug(self.task_name, f'[BrowserRunner] 网页 {self.url} 开始加载')
 
-        # # 设置超时策略, 如果没有超时默认阻塞加载到结束
-        # if self.timeout is not None and self.timeout > 0:
-        #     self.web_driver.set_script_timeout(self.timeout)
+        try:
+            # 尝试访问
+            self.web_driver.get(self.url)
+        except TimeoutException:
+            # 【关键修改】如果加载超时（超过了 set_page_load_timeout 设置的时间）
+            # 我们手动发送停止指令，强行让浏览器认为加载结束，然后继续往下走去截图
+            LogUtil().debug(self.task_name, f'[BrowserRunner] 网页 {self.url} 触发硬性加载超时，强制停止加载继续执行')
+            try:
+                self.web_driver.execute_script("window.stop();")
+            except Exception:
+                pass
+        except Exception as e:
+            LogUtil().debug(self.task_name, f'[BrowserRunner] 网页 {self.url} 加载发生未知错误: {e}')
+            return False
 
         try:
-            self.web_driver.get(self.url)
-
-            # todo: 临时改一下这边的逻辑，超时时间改成等待时间，满足延时需求
             if self.timeout is not None and self.timeout > 0:
                 sleep(self.timeout)
+                pass
 
+                # 如果你有特定的元素要等，可以在这里等
+                # 但因为前面已经是 eager 模式，DOM 大概率都在了
             if self.wait_element_id is not None:
-                WebDriverWait(self.web_driver, self.timeout).until(
-                    lambda d: d.find_element(*self.wait_element_id)
-                )
+                try:
+                    WebDriverWait(self.web_driver, 5).until(  # 建议这里 wait 时间短一点
+                        lambda d: d.find_element(*self.wait_element_id)
+                    )
+                except TimeoutException:
+                    LogUtil().debug(self.task_name, f'[BrowserRunner] 等待特定元素超时，忽略并继续截图')
             else:
                 WebDriverWait(self.web_driver, self.timeout).until(
                     lambda d: d.execute_script("return document.readyState") == "complete"
