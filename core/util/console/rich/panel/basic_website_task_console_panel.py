@@ -89,8 +89,6 @@ class BasicWebsiteTaskConsolePanel:
         with self._lock:
             # 设置当前访问的url
             self._current_url = url
-            # 累计访问url+1
-            self._visited_url_count += 1
 
             # 如果没传入, 默认就是0
             self._current_url_visited_times = current_visit_times if current_visit_times is not None else 0
