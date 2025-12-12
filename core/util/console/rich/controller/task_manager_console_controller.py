@@ -84,7 +84,7 @@ class TaskManagerConsoleController:
             Layout(
                 Panel(self.overall_progress, title="[bold red]全局任务进度[/bold red]"),
                 name="header",
-                size=5
+                size=3
             ),
             Layout(name="tasks")
         )
@@ -114,24 +114,23 @@ class TaskManagerConsoleController:
             for col in range(max_cols):
                 task_index = row * max_cols + col
 
-                # 在每列之间添加间隔（除了第一列之前）
-                if col > 0:
-                    # 添加间隔占位符，宽度为终端宽度的2%
-                    cells.append(Layout("", ratio=2, minimum_size=3, visible=False))
-
                 if task_index < num_tasks:
                     # 有任务：创建任务面板
                     cell_content = panels[task_index].get_renderable()
-                    # 为每个任务面板创建容器布局，添加内边距
                     task_container = Layout(
                         cell_content,
                         ratio=8,  # 面板本身的比例权重
-                        minimum_size=28  # 稍微减小最小尺寸为间隔留出空间
+                        minimum_size=28
                     )
                     cells.append(task_container)
                 else:
                     # 空位：创建空白占位符
-                    cells.append(Layout("", ratio=8, minimum_size=28, visible=False))
+                    empty_placeholder = Layout("", ratio=8, minimum_size=28, visible=False)
+                    cells.append(empty_placeholder)
+
+            # 如果当前行任务数不足3个，补充空白占位符
+            while len(cells) < max_cols:
+                cells.append(Layout("", ratio=8, minimum_size=28, visible=False))
 
             # 将行进行水平分割
             if cells:
