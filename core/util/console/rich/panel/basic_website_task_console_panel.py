@@ -163,6 +163,6 @@ class BasicWebsiteTaskConsolePanel:
                 title=f"[bold cyan]任务{self.task_name}[/bold cyan]",
                 subtitle=subtitle,
                 border_style=border_style,
-                height=8,  # 从10减少到8，为行间间隔留出空间
+                height=6,  # 从10减少到8，为行间间隔留出空间
                 padding=(0, 1, 0, 1)  # 减少左右内边距，使用间隔代替
             )
