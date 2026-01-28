@@ -12,7 +12,7 @@ class ScapySniffer(TrafficSniffer):
     """
 
     def generate_filter_expr_by_params(self):
-        pass
+        super().generate_filter_expr_by_params()
 
     def generate_startup_instruction(self):
         pass
@@ -21,7 +21,8 @@ class ScapySniffer(TrafficSniffer):
                  task_name: str,
                  output_file_path: str,
                  network_interface: str = None,
-                 params: dict = None
+                 params: dict = None,
+                 filter_expr: str = None
                  ):
         """
 
@@ -41,9 +42,12 @@ class ScapySniffer(TrafficSniffer):
             task_name=task_name,
             output_file_path=output_file_path,
             network_interface=network_interface,
-            params=params
+            params=params,
+            filter_expr=filter_expr
         )
 
+        # 生成过滤表达式(如果未显式指定)
+        self.generate_filter_expr_by_params()
 
         # 2. 创建scapy线程
         self.scapy_thread = ScapyThread.create_scapy_thread_by_config(task_name=self.task_name,
@@ -77,6 +81,7 @@ class ScapySniffer(TrafficSniffer):
             output_file_path=config.get('output_file_path'),
             network_interface=config.get('network_interface'),
             params=config.get('params'),
+            filter_expr=config.get('filter_expr'),
         )
         pass
 

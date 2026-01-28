@@ -13,7 +13,8 @@ class TrafficSniffer(metaclass=ABCMeta):
                  task_name,
                  output_file_path: str,
                  network_interface: str=None,
-                 params: dict=None):
+                 params: dict=None,
+                 filter_expr: str=None):
         """
         :param output_file_path: 输出文件名命名
         :param network_interface: 网卡名称
@@ -34,7 +35,7 @@ class TrafficSniffer(metaclass=ABCMeta):
 
         # 2. 附加属性
         # 2.1 过滤表达式
-        self.filter_expr = None
+        self.filter_expr = filter_expr
         # 2.2 启动指令
         self.startup_instruction = None
 
@@ -83,38 +84,35 @@ class TrafficSniffer(metaclass=ABCMeta):
         """
         生成过滤表达式
         """
-        self.filter_expr = ''
+        if self.filter_expr is not None and self.filter_expr != '':
+            # 如果显式指定了过滤表达式, 直接使用
+            return
+
+        expr_parts = []
         # host 主机
         if self.params.get('host') is not None:
             host = self.params.get('host')
-            if self.filter_expr != '':
-                self.filter_expr += ' and '
-            self.filter_expr += f'host {host}'
+            expr_parts.append(f'host {host}')
 
         # port 端口号
         if self.params.get('port') is not None:
             port = self.params.get('port')
-            if self.filter_expr != '':
-                self.filter_expr += ' and '
-            self.filter_expr += f'port {port}'
+            expr_parts.append(f'port {port}')
 
-        if self.params.get('tcp') is not None:
-            if self.params.get('tcp') is True:
-                if self.filter_expr != '':
-                    self.filter_expr += ' and '
-                self.filter_expr += 'tcp'
+        proto_parts = []
+        if self.params.get('tcp') is True:
+            proto_parts.append('tcp')
+        if self.params.get('udp') is True:
+            proto_parts.append('udp')
+        if self.params.get('icmp') is True:
+            proto_parts.append('icmp')
+        if len(proto_parts) > 0:
+            if len(proto_parts) == 1:
+                expr_parts.append(proto_parts[0])
+            else:
+                expr_parts.append(f"({' or '.join(proto_parts)})")
 
-        if self.params.get('udp') is not None:
-            if self.params.get('udp') is True:
-                if self.filter_expr != '':
-                    self.filter_expr += ' and '
-                self.filter_expr += 'udp'
-
-        if self.params.get('icmp') is not None:
-            if self.params.get('icmp') is True:
-                if self.filter_expr != '':
-                    self.filter_expr += ' and '
-                self.filter_expr += 'icmp'
+        self.filter_expr = ' and '.join(expr_parts)
         pass
 
 
