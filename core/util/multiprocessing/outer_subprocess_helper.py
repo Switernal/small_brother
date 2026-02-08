@@ -158,7 +158,7 @@ class OuterSubProcessHelper:
                 # self.__process.send_signal(signal.SIGINT)
 
                 self.__process.terminate() # terminate 会直接中断, 可能会导致程序数据写入丢失
-                # self.__process.wait()       # todo: 不确定这个要不要加
+                self.__process.wait()       # todo: 不确定这个要不要加
 
                 # 获取终止后的输出
                 output_message = self._safe_communicate_and_decode()
