@@ -75,7 +75,7 @@ class MihomoProxyExtension(ProxyExtension):
         :return:
         """
         self.stop_process()
-        sleep(3)    # todo: 等待代理冷却3秒, 更优雅的方式是监控进程状态, 或者监控端口是否被占用, 而不是简单粗暴的等待固定时间
+        sleep(1)    # todo: 等待代理冷却3秒, 更优雅的方式是监控进程状态, 或者监控端口是否被占用, 而不是简单粗暴的等待固定时间
         pass
 
 

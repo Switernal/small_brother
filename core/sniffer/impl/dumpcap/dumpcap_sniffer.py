@@ -2,6 +2,8 @@ __doc__ = "dumpcap 嗅探器"
 __author__ = "Li Qingyun"
 __date__ = "2025-12-03"
 
+from time import sleep
+
 from core.sniffer.impl.dumpcap.dumpcap_util import DumpcapUtil
 from core.sniffer.interface.traffic_sniffer import TrafficSniffer
 from core.util.multiprocessing import OuterSubProcessHelper
@@ -80,6 +82,7 @@ class DumpcapSniffer(TrafficSniffer):
         启动抓包
         """
         self.dumpcap_subprocess.start_process()
+        sleep(1)
         pass
 
     def stop_sniffer(self):

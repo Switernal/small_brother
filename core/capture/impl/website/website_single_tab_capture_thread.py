@@ -2,7 +2,7 @@ __doc__="网站抓取进程"
 __author__="Li Qingyun"
 __date__="2025-03-09"
 
-from time import sleep
+from time import sleep, time
 
 from core.capture.interface.capture_thread import CaptureThread
 from core.extension.const.extension_type import ExtensionType
@@ -163,7 +163,7 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
 
         LogUtil().debug(self.task_name, f"[WebsiteCaptureThread] 扩展正在装载, 等待3秒...")
 
-        sleep(3)
+        sleep(1)
 
         # 获取扩展信息(协议栈/主要是pid)
         self.extension_info = self.extension.get_extension_info()
@@ -215,14 +215,12 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
 
     def __create_and_start_sniffer(self):
         """
-        创建并启动流量嗅探模块(包括TrafficSniffer和ConnectionTracker)
+        创建并启动流量嗅探模块(TrafficSniffer)
 
         流程:
             1. 设置pcap路径
             2. 创建TrafficSniffer, 但需要检查是否传入sniffer_config, 如果传入了应该特别处理
             3. 启动TrafficSniffer
-            4. 创建ConnectionTracker线程, 但需要检查是否传入sniffer_conn_tracker_config, 如果传入了应该特别处理
-            5. 启动ConnectionTracker线程
         :return:
         """
         LogUtil().debug(self.task_name, f"[WebsiteCaptureThread] 正在启动 Sniffer 模块")
@@ -239,17 +237,17 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
             self.sniffer_config = {}
 
         # 2.2 如果是代理且没有指定表达式/参数, 需要把远程地址和端口生成一个过滤表达式传入TrafficSniffer
-        if self.__is_extension_proxy() and self.sniffer_config.get('filter_expr') is None and self.sniffer_config.get('params') is None:
-            # 主动创建一个但是没有传入 sniffer_config
-            params = {}
-            remote_addr = self.extension_info.get('protocol_stack').remote_address
-            remote_port = self.extension_info.get('protocol_stack').remote_port
-            params['host'] = remote_addr
-            params['port'] = remote_port
-            params['tcp']  = True
-            params['udp']  = False
-            params['icmp'] = False
-            self.sniffer_config.update({'params': params})
+        # if self.__is_extension_proxy() and self.sniffer_config.get('filter_expr') is None and self.sniffer_config.get('params') is None:
+        #     # 主动创建一个但是没有传入 sniffer_config
+        #     params = {}
+        #     remote_addr = self.extension_info.get('protocol_stack').remote_address
+        #     remote_port = self.extension_info.get('protocol_stack').remote_port
+        #     params['host'] = remote_addr
+        #     params['port'] = remote_port
+        #     params['tcp']  = True
+        #     params['udp']  = False
+        #     params['icmp'] = False
+        #     self.sniffer_config.update({'params': params})
 
         # 2.3 如果配置中没有指定保存目录, 就把生成的pcap目录设置进去
         self.sniffer_config.update({'output_file_path': self.__pcap_path})
@@ -272,25 +270,61 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
         # 3. 启动 TrafficSniffer 线程
         self.sniffer.start_sniffer()
 
-        LogUtil().debug(self.task_name, f"[WebsiteCaptureThread] 正在启动 TrafficSniffer 模块 (ConnectionTracker)")
+        # 3.1 等待 Sniffer 真正就绪，避免遗漏最早的握手包
+        warmup_seconds = 0.5
+        if self.sniffer_config is not None:
+            warmup_seconds = self.sniffer_config.get('warmup_seconds', warmup_seconds)
+        if warmup_seconds and warmup_seconds > 0:
+            LogUtil().debug(self.task_name, f"[WebsiteCaptureThread] 等待 Sniffer 就绪 {warmup_seconds}s")
+            sleep(warmup_seconds)
 
-        # 4. 检查是否传入conn_tracker_config
+        pass
+
+
+    def __start_connection_tracker(self):
+        """
+        创建并启动连接追踪模块(ConnectionTracker)
+        :return:
+        """
+        if self.sniffer_conn_tracker_thread is not None:
+            return
+
+        pid_to_monitor = getattr(self, 'pid_to_monitor', None)
+        if pid_to_monitor is None:
+            LogUtil().warning(self.task_name, f"[WebsiteCaptureThread] pid_to_monitor 未设置, 跳过 ConnectionTracker 启动")
+            return
+
+        LogUtil().debug(self.task_name, f"[WebsiteCaptureThread] 正在启动 ConnectionTracker 模块 (pid={pid_to_monitor})")
+
+        # 检查是否传入conn_tracker_config
         if self.sniffer_conn_tracker_config is None:
             # 创建连接追踪线程
             self.sniffer_conn_tracker_thread = ConnectionTrackerThread(
                 task_name=self.task_name,
-                pid=self.pid_to_monitor,
+                pid=pid_to_monitor,
                 log_file_dir=self.output_main_dir,
-                log_file_name=f'{self.url_for_dir}_{self.pid_to_monitor}_{self.__create_time_str}.log'
+                log_file_name=f'{self.url_for_dir}_{pid_to_monitor}_{self.__create_time_str}.log'
             )
         else:
-            # todo: 如果传入了config, ConnectionTrackerThread
+            # 如果传入了config, 确保关键字段存在
+            conn_tracker_config = dict(self.sniffer_conn_tracker_config)
+            if conn_tracker_config.get('pid') is None:
+                conn_tracker_config.update({'pid': pid_to_monitor})
+            if conn_tracker_config.get('log_file_dir') is None:
+                conn_tracker_config.update({'log_file_dir': self.output_main_dir})
+            if conn_tracker_config.get('log_file_name') is None:
+                conn_tracker_config.update({'log_file_name': f'{self.url_for_dir}_{pid_to_monitor}_{self.__create_time_str}.log'})
+
             # 创建连接追踪线程
-            self.sniffer_conn_tracker_thread = ConnectionTrackerThread.create_connection_tracker_thread_by_config(task_name=self.task_name,
-                                                                                                                  config=self.sniffer_conn_tracker_config)
+            self.sniffer_conn_tracker_thread = ConnectionTrackerThread.create_connection_tracker_thread_by_config(
+                task_name=self.task_name,
+                config=conn_tracker_config
+            )
         # end if
-        # 5. 启动连接追踪
+        # 启动连接追踪
         self.sniffer_conn_tracker_thread.start()
+
+        pass
 
     def __visit_website(self):
         """
@@ -341,6 +375,67 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
         # 2. 停止ConnectionTracker线程
         if self.sniffer_conn_tracker_thread is not None:
             self.sniffer_conn_tracker_thread.stop()
+            # 等待线程退出，确保连接列表稳定
+            self.sniffer_conn_tracker_thread.join(timeout=2)
+
+        pass
+
+
+    def __wait_for_tail_capture(self):
+        """
+        额外的尾部捕获等待，用于尽量捕获 FIN/RST 等关闭包
+        :return:
+        """
+        tail_seconds = 1.0
+        if self.sniffer_config is not None:
+            tail_seconds = self.sniffer_config.get('tail_capture_seconds', tail_seconds)
+
+        if tail_seconds and tail_seconds > 0:
+            LogUtil().debug(self.task_name, f"[WebsiteCaptureThread] 尾部捕获等待 {tail_seconds}s")
+            sleep(tail_seconds)
+
+        pass
+
+
+    def __wait_for_connections_quiet(self):
+        """
+        等待连接进入相对安静状态, 以尽量捕获完整流
+        :return:
+        """
+        if self.sniffer_conn_tracker_thread is None:
+            return
+
+        # 默认等待参数
+        quiet_seconds = 1.5
+        max_wait_seconds = 8.0
+        poll_interval = 0.2
+
+        if self.sniffer_conn_tracker_config is not None:
+            quiet_seconds = self.sniffer_conn_tracker_config.get('quiet_seconds', quiet_seconds)
+            max_wait_seconds = self.sniffer_conn_tracker_config.get('max_wait_seconds', max_wait_seconds)
+            poll_interval = self.sniffer_conn_tracker_config.get('poll_interval', poll_interval)
+
+        if max_wait_seconds <= 0:
+            return
+
+        LogUtil().debug(self.task_name, f"[WebsiteCaptureThread] 等待连接安静 (quiet={quiet_seconds}s, max_wait={max_wait_seconds}s)")
+
+        start_ts = time()
+        last_active_ts = time()
+        while time() - start_ts < max_wait_seconds:
+            active_count = 0
+            for conn in self.sniffer_conn_tracker_thread.get_connections_list():
+                if conn.active:
+                    active_count += 1
+
+            if active_count == 0:
+                if time() - last_active_ts >= quiet_seconds:
+                    LogUtil().debug(self.task_name, "[WebsiteCaptureThread] 连接已安静, 结束等待")
+                    break
+            else:
+                last_active_ts = time()
+
+            sleep(poll_interval)
 
         pass
 
@@ -352,11 +447,15 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
         :return:
         """
         # 如果扩展是代理则无需过滤
-        if self.__is_extension_proxy() is True:
-            LogUtil().debug(self.task_name, f"[WebsiteCaptureThread] 代理下无需过滤")
-            return
+        # if self.__is_extension_proxy() is True:
+        #     LogUtil().debug(self.task_name, f"[WebsiteCaptureThread] 代理下无需过滤")
+        #     return
 
         LogUtil().debug(self.task_name, f"[WebsiteCaptureThread] 正在过滤 pcap 文件")
+
+        if self.sniffer is None or self.sniffer_conn_tracker_thread is None:
+            LogUtil().warning(self.task_name, f"[WebsiteCaptureThread] 缺少 Sniffer 或 ConnectionTracker, 跳过过滤")
+            return
 
         # 流量嗅探信息(pcap路径和connection列表)
         pcap_path = self.sniffer.get_pcap_path()
@@ -374,25 +473,34 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
         # 0. 更新主输出目录
         self.__update_output_main_dir()
 
-        # 1. 启动扩展(进程/线程)(非阻塞)
-        self.__load_extension()
-
-        # 2. 创建请求线程(非阻塞)
-        self.__create_request_thread()
-
-        # 3. 启动流量嗅探(非阻塞)
+        # 1. 启动流量嗅探(非阻塞) - 尽量提前, 避免遗漏握手包
         self.__create_and_start_sniffer()
 
-        # 4. 访问网站(阻塞)
+        # 2. 启动扩展(进程/线程)(非阻塞)
+        self.__load_extension()
+
+        # 3. 创建请求线程(非阻塞)
+        self.__create_request_thread()
+
+        # 4. 启动连接追踪(非阻塞)
+        self.__start_connection_tracker()
+
+        # 5. 访问网站(阻塞)
         self.__visit_website()
 
-        # 5. 卸载扩展
+        # 6. 等待连接安静，尽量保证完整流
+        self.__wait_for_connections_quiet()
+
+        # 7. 卸载扩展（保持抓包进行中，尽量捕获连接关闭包）
         self.__unload_extension()
 
-        # 6. 关闭嗅探进程
+        # 8. 额外尾部等待，捕获 FIN/RST
+        self.__wait_for_tail_capture()
+
+        # 9. 关闭嗅探进程
         self.__stop_sniffer()
 
-        # 7. 过滤pcap文件
+        # 10. 过滤pcap文件
         self.__filter_pcap()
 
         # todo: 8. 处理和识别流量
@@ -411,5 +519,3 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
         """
         # 没什么需要清理的, 空着就好
         pass
-
-

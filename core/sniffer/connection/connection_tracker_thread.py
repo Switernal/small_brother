@@ -24,7 +24,8 @@ class ConnectionTrackerThread(BetterThread):
                  task_name,
                  pid: int,
                  log_file_dir: str,
-                 log_file_name=None
+                 log_file_name=None,
+                 interval: float = 0.1
                  ):
         super().__init__()
         
@@ -41,7 +42,7 @@ class ConnectionTrackerThread(BetterThread):
         self.process = psutil.Process(pid)            # 进程
         self.hostname_cache = {}                      # DNS缓存
 
-        self.interval = 0.5       # 轮询间隔
+        self.interval = interval       # 轮询间隔(秒)
 
         # 设置多线程相关
         self.daemon = True                    # 设为守护线程, 主线程终止会带着子线程一起停
@@ -215,5 +216,6 @@ class ConnectionTrackerThread(BetterThread):
             task_name=task_name,
             pid=config.get('pid'),
             log_file_dir=config.get('log_file_dir'),
-            log_file_name=config.get('log_file_name')
+            log_file_name=config.get('log_file_name'),
+            interval=config.get('interval', 0.1)
         )
