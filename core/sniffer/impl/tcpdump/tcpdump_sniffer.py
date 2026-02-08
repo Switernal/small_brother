@@ -14,7 +14,8 @@ class TcpdumpSniffer(TrafficSniffer):
                  task_name: str,
                  output_file_path: str,
                  network_interface: str = None,
-                 params: dict = None
+                 params: dict = None,
+                 filter_expr: str = None
                  ):
         """
 
@@ -34,7 +35,8 @@ class TcpdumpSniffer(TrafficSniffer):
             task_name=task_name,
             output_file_path=output_file_path,
             network_interface=network_interface,
-            params=params
+            params=params,
+            filter_expr=filter_expr
         )
 
         # 2. tcpdump 指令位置
@@ -89,6 +91,7 @@ class TcpdumpSniffer(TrafficSniffer):
             output_file_path=config.get('output_file_path'),
             network_interface=config.get('network_interface'),
             params=config.get('params'),
+            filter_expr=config.get('filter_expr'),
         )
         pass
 

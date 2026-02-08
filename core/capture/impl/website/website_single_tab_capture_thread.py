@@ -238,8 +238,8 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
         if self.sniffer_config is None:
             self.sniffer_config = {}
 
-        # 2.2 如果是代理且没有指定表达式, 需要把远程地址和端口生成一个过滤表达式传入TrafficSniffer
-        if self.__is_extension_proxy() and self.sniffer_config.get('params') is None:
+        # 2.2 如果是代理且没有指定表达式/参数, 需要把远程地址和端口生成一个过滤表达式传入TrafficSniffer
+        if self.__is_extension_proxy() and self.sniffer_config.get('filter_expr') is None and self.sniffer_config.get('params') is None:
             # 主动创建一个但是没有传入 sniffer_config
             params = {}
             remote_addr = self.extension_info.get('protocol_stack').remote_address
@@ -247,7 +247,7 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
             params['host'] = remote_addr
             params['port'] = remote_port
             params['tcp']  = True
-            params['upd']  = False
+            params['udp']  = False
             params['icmp'] = False
             self.sniffer_config.update({'params': params})
 
@@ -264,6 +264,10 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
         self.sniffer = TrafficSniffer.creat_sniffer_by_config(task_name=self.task_name,
                                                               config=self.sniffer_config)
         # end if
+        if getattr(self.sniffer, 'filter_expr', None):
+            LogUtil().debug(self.task_name, f"[WebsiteCaptureThread] 使用过滤表达式: {self.sniffer.filter_expr}")
+        else:
+            LogUtil().debug(self.task_name, f"[WebsiteCaptureThread] 未指定过滤表达式(按默认/全量抓包)")
 
         # 3. 启动 TrafficSniffer 线程
         self.sniffer.start_sniffer()
@@ -407,6 +411,5 @@ class WebsiteSingleTabCaptureThread(CaptureThread):
         """
         # 没什么需要清理的, 空着就好
         pass
-
 
 
